@@ -1,0 +1,34 @@
+# GitHub Pages: renders README.md as the site home page (jekyll-readme-index is enabled by default).
+title: KhartTool
+description: Offline drag-and-drop file converter for Windows
+theme: jekyll-theme-cayman
+show_downloads: false
+
+plugins:
+  - jekyll-readme-index
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+  - jekyll-titles-from-headings
+
+relative_links:
+  enabled: true
+  collection: false
+
+# Keep source code, build output and internal docs out of the site.
+exclude:
+  - src
+  - scripts
+  - requirements
+  - pyproject.toml
+  - CONTRIBUTING.md
+  - tests
+  - tools
+  - packaging
+  - licensing-server
+  - docs
+  - build
+  - dist
+  - CLAUDE.md
+  - "*.log"
+  - node_modules
+  - venv

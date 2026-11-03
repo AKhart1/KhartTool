@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KhartTool — Drop a file. The wheel already knows.</title>
+  <meta name="description" content="KhartTool 0.1.0 is an offline Windows drop pill. Shift opens the format wheel, Ctrl opens tools. No telemetry in the desktop app." />
+  <meta name="theme-color" content="#09090b" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%2309090b'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { canvas: "#09090b", ink: "#0c0c0f", card: "#18181b" },
+          fontFamily: { sans: ["Inter", '"Segoe UI Variable"', '"Segoe UI"', "ui-sans-serif", "system-ui", "sans-serif"] },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+  <!--
+    Google Analytics 4 — paste a measurement ID, then uncomment.
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "G-XXXXXXXXXX");
+    </script>
+  -->
+  <!--
+    PostHog — paste a project key, then uncomment.
+    <script>
+      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+      posthog.init("phc_YOUR_PROJECT_KEY", { api_host: "https://us.i.posthog.com", person_profiles: "identified_only" });
+    </script>
+  -->
+  <style>
+    body { background: #09090b; color: #fafafa; }
+    .atmosphere {
+      background:
+        radial-gradient(640px 320px at 12% -8%, rgba(255,255,255,0.07), transparent 60%),
+        radial-gradient(520px 280px at 92% 0%, rgba(140,160,255,0.07), transparent 55%);
+    }
+    .stage {
+      background: rgba(12, 12, 15, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .pill {
+      width: min(100%, 290px);
+      height: 58px;
+      border-radius: 24px;
+      background: rgba(10, 10, 14, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+    .pill.hot { border-color: rgba(255,255,255,0.45); }
+    .switcher button[aria-pressed="true"] {
+      background: #fff;
+      color: #09090b;
+      border-color: #fff;
+    }
+    canvas { display: block; width: 100%; height: auto; touch-action: none; }
+    .slot-stage { background: #0c0c0f; border: 1px solid rgba(255,255,255,0.08); }
+    .file-chip, .mini-slice, .meta-chip { position: absolute; }
+    @keyframes drift-in {
+      0% { transform: translate(18px, 72px) scale(0.92); opacity: 0; }
+      28% { opacity: 1; }
+      55% { transform: translate(0, 8px) scale(1); opacity: 1; }
+      100% { transform: translate(0, 8px) scale(1); opacity: 1; }
+    }
+    @keyframes bloom {
+      0%, 40% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+      62% { opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    @keyframes tag-drop {
+      0%, 35% { transform: translateY(0); opacity: 1; }
+      70%, 100% { transform: translateY(28px); opacity: 0; }
+    }
+    @keyframes shrink-frame {
+      0%, 30% { transform: scale(1); }
+      70%, 100% { transform: scale(0.72); }
+    }
+    @keyframes fillbar {
+      0% { width: 4%; }
+      100% { width: 96%; }
+    }
+    .anim-file { animation: drift-in 3.6s ease-in-out infinite; }
+    .anim-bloom { animation: bloom 3.6s ease-in-out infinite; }
+    .anim-tag { animation: tag-drop 3.6s ease-in-out infinite; }
+    .anim-shrink { animation: shrink-frame 3.6s ease-in-out infinite; }
+    .anim-bar { animation: fillbar 3.6s ease-in-out infinite; }
+    .slot.has-video .fallback { display: none; }
+    .slot.has-video video { display: block; }
+    video.slot-video { display: none; width: 100%; height: 100%; object-fit: cover; }
+    @media (prefers-reduced-motion: reduce) {
+      .anim-file, .anim-bloom, .anim-tag, .anim-shrink, .anim-bar { animation: none; }
+    }
+    .chain-node.done { border-color: rgba(255,255,255,0.72); }
+    .flow-key {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 108px;
+      height: 44px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: #18181b;
+      color: #fafafa;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-bottom: 3px solid rgba(255,255,255,0.3);
+      box-shadow: 0 6px 0 #09090b, 0 10px 18px rgba(0,0,0,0.45);
+      font-size: 13px;
+      font-weight: 600;
+      transform: translateY(0);
+      transition: transform 90ms ease, box-shadow 90ms ease, border-color 90ms ease;
+    }
+    .flow-key.is-down {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #09090b, 0 4px 10px rgba(0,0,0,0.35);
+      border-color: rgba(52, 211, 153, 0.85);
+    }
+    .flow-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #3f3f46;
+    }
+    .flow-key.is-down .flow-led {
+      background: #34d399;
+      box-shadow: 0 0 0 3px rgba(52,211,153,0.28), 0 0 12px rgba(52,211,153,0.85);
+    }
+    ::selection { background: rgba(255,255,255,0.16); }
+  </style>
+</head>
+<body class="font-sans antialiased">
+  <div class="atmosphere min-h-screen">
+    <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+      <a href="#top" class="flex items-center gap-2 text-sm font-medium tracking-tight">
+        <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/15"><i data-lucide="circle" class="h-3.5 w-3.5"></i></span>
+        KhartTool <span class="text-zinc-500">0.1.0</span>
+      </a>
+      <nav class="flex items-center gap-5 text-sm text-zinc-400">
+        <a href="#audiences" class="hover:text-white">Audiences</a>
+        <a href="#how" class="hidden hover:text-white sm:inline">How it works</a>
+        <a href="#feedback" class="hover:text-white">Feedback</a>
+        <a href="#download" onclick="trackEvent('mvp_download_click', { placement: 'nav' })" class="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-zinc-950 hover:bg-zinc-200">Download</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-6 lg:grid-cols-[0.92fr_1.08fr]">
+        <div>
+          <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">Windows 10 / 11 · Free Edition · Offline</p>
+          <h1 class="mt-4 text-4xl font-medium leading-[1.05] tracking-tight sm:text-5xl">Drop a file.<br />The wheel already knows.</h1>
+          <p class="mt-5 max-w-xl text-base leading-relaxed text-zinc-400">A frameless pill sits above your windows. Hold Shift and a weight-sized format wheel opens at the cursor. Hold Ctrl and the tool wheel opens. Nothing is uploaded.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="https://github.com/AKhart1/KhartTool/releases/latest" onclick="trackEvent('mvp_download_click', { placement: 'hero' })" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+              <i data-lucide="download" class="h-4 w-4"></i>
+              Download KhartTool MVP (v0.1.0-alpha)
+            </a>
+            <a href="#how" class="rounded-full border border-white/10 px-5 py-3 text-sm text-zinc-300 hover:border-white/30">Watch the drop</a>
+          </div>
+          <ul class="mt-5 flex flex-wrap gap-2 text-xs text-zinc-300">
+            <li class="rounded-full border border-white/10 bg-card px-3 py-1">Windows 10/11</li>
+            <li class="rounded-full border border-white/10 bg-card px-3 py-1">Portable .exe + zip</li>
+            <li class="rounded-full border border-white/10 bg-card px-3 py-1">100% local / offline</li>
+            <li class="rounded-full border border-white/10 bg-card px-3 py-1">Zero telemetry</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="stage overflow-hidden rounded-2xl">
+            <div class="flex items-center justify-between border-b border-white/[0.08] px-4 py-2 text-[11px] text-zinc-500">
+              <span>KhartTool</span>
+              <span id="mode-chip">Shift · formats</span>
+            </div>
+            <div class="relative px-4 pb-4 pt-5" id="drop-stage">
+              <div class="pill mx-auto flex items-center gap-2.5 px-2" id="live-pill">
+                <video id="logo-video" class="h-[34px] w-[34px] shrink-0 rounded-full object-cover" src="src/assets/logo.mp4" autoplay muted loop playsinline aria-label="KhartTool logo"></video>
+                <div class="min-w-0 flex-1 leading-tight">
+                  <div class="truncate text-[13px] font-semibold text-white">Drop files</div>
+                  <div class="truncate text-[11px] text-zinc-400">Shift: quick · Ctrl: tools</div>
+                </div>
+                <div class="relative shrink-0">
+                  <button type="button" id="preset-btn" class="rounded-md bg-white/10 px-1.5 py-1 text-[10px] text-white" aria-expanded="false" aria-controls="preset-menu">Quick wheel</button>
+                  <div id="preset-menu" class="absolute right-0 z-20 mt-1 hidden w-48 rounded-lg border border-white/10 bg-[#1c1c1e] p-1 text-left shadow-xl" role="menu">
+                    <button type="button" class="preset-opt block w-full rounded-md px-2 py-1.5 text-left text-[11px] text-zinc-200 hover:bg-white/10" data-preset="quick">Quick wheel</button>
+                    <button type="button" class="preset-opt block w-full rounded-md px-2 py-1.5 text-left text-[11px] text-zinc-200 hover:bg-white/10" data-preset="web">Web Optimizer</button>
+                    <button type="button" class="preset-opt block w-full rounded-md px-2 py-1.5 text-left text-[11px] text-zinc-200 hover:bg-white/10" data-preset="privacy">Privacy Cleaner</button>
+                  </div>
+                </div>
+                <span class="px-1 text-sm text-white/40" title="Minimize to logo">—</span>
+              </div>
+              <canvas id="wheel" width="640" height="380" aria-label="KhartTool radial action wheel"></canvas>
+              <div class="mt-1 flex flex-wrap items-center justify-center gap-2">
+                <div class="flex flex-wrap justify-center gap-2" id="cat-pills">
+                  <button type="button" class="cat-pill rounded-full bg-white px-3 py-1.5 text-xs text-zinc-950" data-cat="image" aria-pressed="true">Images / RAW</button>
+                  <button type="button" class="cat-pill rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-cat="video" aria-pressed="false">Videos</button>
+                  <button type="button" class="cat-pill rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-cat="audio" aria-pressed="false">Audio</button>
+                  <button type="button" class="cat-pill rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-cat="doc" aria-pressed="false">Documents</button>
+                </div>
+                <div class="flex gap-2" id="mode-pills">
+                  <button type="button" class="mode-pill rounded-full bg-white px-3 py-1.5 text-xs text-zinc-950" data-mode="shift" aria-pressed="true">Shift: Formats</button>
+                  <button type="button" class="mode-pill rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-mode="ctrl" aria-pressed="false">Ctrl: Tools</button>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-3 border-t border-white/[0.08] px-4 py-2 text-[11px] text-zinc-500">
+              <span id="wheel-status">Shift drop · folder · slices sized by weight</span>
+              <button type="button" id="replay-drop" class="text-zinc-300 hover:text-white">Replay bloom</button>
+            </div>
+          </div>
+          <p class="mt-3 text-[11px] leading-relaxed text-zinc-500">Slices match <span class="text-zinc-400">ActionResolver</span>. The pill mark is <span class="text-zinc-400">assets/logo.mp4</span>, the same clip the app plays. Presets are the two built-ins in <span class="text-zinc-400">presets.json</span>.</p>
+        </div>
+      </section>
+
+      <section id="how" class="mx-auto max-w-6xl px-6 pb-20">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">How KhartTool operates</h2>
+            <p class="mt-2 max-w-2xl text-sm text-zinc-400">The wheel opens at the cursor. Shift is formats. Ctrl is tools. Playback uses the same slice math as the app.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="play-shift" class="rounded-full bg-white px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-200">Play Shift flow</button>
+            <button type="button" id="play-ctrl" class="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-200 hover:border-white/30">Play Ctrl flow</button>
+            <button type="button" id="flow-reset" class="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-400 hover:text-white">Reset</button>
+          </div>
+        </div>
+        <div class="stage relative mt-5 overflow-hidden rounded-2xl">
+          <canvas id="flow" width="880" height="460" aria-label="Animated Shift and Ctrl drag walkthrough"></canvas>
+          <kbd id="flow-key" class="flow-key pointer-events-none absolute left-5 top-5" aria-hidden="true"><span id="flow-led" class="flow-led"></span><span id="flow-key-label">⇧ Shift</span></kbd>
+          <p id="flow-caption" class="border-t border-white/[0.08] px-4 py-3 text-xs text-zinc-400">Press Play. A file is grabbed, the modifier lights, and the wheel blooms on the cursor.</p>
+        </div>
+      </section>
+
+      <section id="audiences" class="mx-auto max-w-6xl px-6 pb-20">
+        <h2 class="text-2xl font-medium tracking-tight">Eight jobs, one drop</h2>
+        <p class="mt-2 max-w-2xl text-sm text-zinc-400">Filter a profile. The feedback role follows the card you pick.</p>
+        <div class="mt-5 flex flex-wrap gap-2" role="tablist">
+          <button type="button" class="aud-tab rounded-full bg-white px-3 py-1.5 text-xs text-zinc-950" data-role="all" aria-selected="true">All</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="ml" data-form="AI / ML">Research</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="photo" data-form="Photographer">Photo</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="shop" data-form="E-commerce">Commerce</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="legal" data-form="Legal / Healthcare / Finance">Legal</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="creator" data-form="Video / Creator">Motion</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="design" data-form="UI / Frontend">Design</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="writer" data-form="Writer / Educator">Writing</button>
+          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="privacy" data-form="Privacy / Power user">Privacy</button>
+        </div>
+        <div class="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" id="audience-grid">
+          <article data-role="ml" data-form="AI / ML" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Dataset</span>
+            <h3 class="mt-3 text-sm font-medium">AI researchers &amp; ML engineers</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">You are about to train. The folder is mixed sizes, leftover EXIF, and a few files that will not open.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Drop <span class="text-white">train/</span>. This build resizes with Lanczos, strips metadata, and writes PNG, JPG, or WebP, up to 5,000 files. RGB normalization, corrupt-file discard, and a 512 center-crop are the v0.2 chain above — not a shipped dataloader.</p>
+          </article>
+          <article data-role="photo" data-form="Photographer" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">RAW</span>
+            <h3 class="mt-3 text-sm font-medium">Commercial &amp; event photographers</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">Two thousand CR2 or ARW frames, and a client gallery that must not include the venue’s GPS pin.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Shift-drag a RAW file onto JPG, PNG, WEBP, or TIFF. Optional rawpy does the decode. Privacy Cleaner copies pixels into a clean file so GPS and camera serial stay behind. It is a wheel action, not a global hotkey.</p>
+          </article>
+          <article data-role="shop" data-form="E-commerce" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Storefront</span>
+            <h3 class="mt-3 text-sm font-medium">E-commerce &amp; Shopify</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">A supplier dropped 15&nbsp;MB TIFFs into the product folder. The store feels it on every page.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Web Optimizer resizes the long side to 1,920, strips EXIF, and writes WebP at quality 92. AVIF output and a fixed margin pass are not in 0.1.0 — ask for that preset below.</p>
+          </article>
+          <article data-role="legal" data-form="Legal / Healthcare / Finance" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Confidential</span>
+            <h3 class="mt-3 text-sm font-medium">Legal, healthcare &amp; finance</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">A contract or record still carries an author name, a revision trail, or a GPS tag, and it cannot go to a conversion site.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">The file stays on the PC. Strip image or PDF metadata, merge or compress PDFs, convert DOCX locally. This build does not flatten form fields, lock a PDF read-only, or certify HIPAA or GDPR. It also does not upload.</p>
+          </article>
+          <article data-role="creator" data-form="Video / Creator" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Social</span>
+            <h3 class="mt-3 text-sm font-medium">Motion, YouTube &amp; SMM</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">You need a looping GIF for a newsletter, or the audio from a clip, without a watermarked website.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Shift-drag to GIF, WebM, MP4, or Extract MP3. Ctrl opens trim, crop, speed, and mute through FFmpeg. A 15-second 9:16 60&nbsp;fps GIF batch is the social preset above, not a one-flick export in this build.</p>
+          </article>
+          <article data-role="design" data-form="UI / Frontend" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Design</span>
+            <h3 class="mt-3 text-sm font-medium">UI, UX &amp; frontend</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">A Figma export folder is full of heavy PNGs and color profiles you do not want in the repo.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Drop the folder. Convert PNG to WebP, resize, strip profiles. KhartTool does not optimize SVG paths in 0.1.0 — that belongs on the feedback form, not in the download.</p>
+          </article>
+          <article data-role="writer" data-form="Writer / Educator" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Docs</span>
+            <h3 class="mt-3 text-sm font-medium">Writers, academics &amp; educators</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">Lecture notes are in Markdown. A table is a CSV. You do not want Word, and you do not want an ad page.</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Shift-drag between PDF, DOCX, TXT, JSON, CSV, and Markdown. DOCX to PDF uses Word when it is installed, otherwise a ReportLab approximation. JSON and CSV convert both ways.</p>
+          </article>
+          <article data-role="privacy" data-form="Privacy / Power user" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
+            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Local</span>
+            <h3 class="mt-3 text-sm font-medium">Privacy purists &amp; power users</h3>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-500">Another tab, another 25&nbsp;MB cap, another site that keeps the file “for processing.”</p>
+            <p class="mt-2 text-xs leading-relaxed text-zinc-300">The pill is already on the desktop. Shift converts, Ctrl opens tools, Esc closes the wheel. There is no global hotkey. The app sends nothing unless you start license activation yourself.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="download" class="mx-auto max-w-6xl px-6 pb-20">
+        <div class="rounded-3xl border border-white/10 bg-card p-8 sm:p-10">
+          <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">MVP distribution</p>
+          <h2 class="mt-3 text-3xl font-medium tracking-tight">Install the build. Keep the files.</h2>
+          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">Latest release: <span class="text-zinc-200">KhartTool-0.1.0-win64-setup.exe</span> and <span class="text-zinc-200">KhartTool-0.1.0-win64-portable.zip</span>. SmartScreen may call an unsigned build unrecognized. Use More info, then Run anyway. Do not disable Defender. Video tools need the FFmpeg binary shipped in that zip.</p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <a href="https://github.com/AKhart1/KhartTool/releases/latest" onclick="trackEvent('mvp_download_click', { placement: 'download_block' })" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+              <i data-lucide="download" class="h-4 w-4"></i>
+              Download KhartTool MVP (v0.1.0-alpha)
+            </a>
+            <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Windows 10/11</span>
+            <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Portable exe</span>
+            <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Zero telemetry</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="feedback" class="mx-auto max-w-6xl px-6 pb-24">
+        <div class="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+          <div>
+            <h2 class="text-2xl font-medium tracking-tight">What should v0.2 learn?</h2>
+            <p class="mt-3 text-sm leading-relaxed text-zinc-400">Posts to Web3Forms. To use Formspree, set the form action to <span class="text-zinc-300">https://formspree.io/f/YOUR_ACCESS_KEY_HERE</span> and remove the access_key field.</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <a id="github-issue" href="https://github.com/AKhart1/KhartTool/issues/new" class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm hover:border-white/30" target="_blank" rel="noopener"><i data-lucide="circle-dot" class="h-4 w-4"></i>Create GitHub Issue</a>
+              <a href="https://github.com/AKhart1/KhartTool/discussions" class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm hover:border-white/30" target="_blank" rel="noopener"><i data-lucide="messages-square" class="h-4 w-4"></i>GitHub Discussions</a>
+            </div>
+          </div>
+          <form id="feedback-form" class="rounded-2xl border border-white/10 bg-card p-6" action="https://api.web3forms.com/submit" method="POST">
+            <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE" />
+            <input type="hidden" name="subject" value="KhartTool MVP feedback" />
+            <label class="block text-xs text-zinc-400" for="role">Role</label>
+            <select id="role" name="role" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none focus:border-white/30">
+              <option>AI / ML</option>
+              <option>Photographer</option>
+              <option>E-commerce</option>
+              <option>Legal / Healthcare / Finance</option>
+              <option>Video / Creator</option>
+              <option>UI / Frontend</option>
+              <option>Writer / Educator</option>
+              <option>Privacy / Power user</option>
+            </select>
+            <label class="mt-4 block text-xs text-zinc-400" for="wanted">What formats, tools, or batch presets do you want to see?</label>
+            <textarea id="wanted" name="wanted" rows="3" maxlength="1000" placeholder="e.g., AVIF conversion, automatic watermark removal, PDF OCR, bulk rename..." class="mt-1 w-full resize-y rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-white/30"></textarea>
+            <label class="mt-4 block text-xs text-zinc-400" for="feature">Pipeline or preset request</label>
+            <input id="feature" name="feature_request" type="text" maxlength="240" placeholder="Every morning I need…" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-white/30" />
+            <label class="mt-4 block text-xs text-zinc-400" for="bug">Feedback / bug report</label>
+            <textarea id="bug" name="bug_report" rows="4" maxlength="2000" placeholder="What you dropped, what you expected, what happened." class="mt-1 w-full resize-y rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-white/30"></textarea>
+            <label class="mt-4 block text-xs text-zinc-400" for="email">Contact email <span class="text-zinc-600">(optional)</span></label>
+            <input id="email" name="email" type="email" autocomplete="email" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none focus:border-white/30" />
+            <button type="submit" class="mt-5 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-200">Send feedback</button>
+            <p id="form-note" class="mt-3 text-xs text-zinc-500">Replace YOUR_ACCESS_KEY_HERE before mail can send. GitHub links work without it.</p>
+          </form>
+        </div>
+      </section>
+    </main>
+    <footer class="border-t border-white/10 px-6 py-8 text-center text-xs text-zinc-500">KhartTool 0.1.0 · KhartDev · Free Edition. The desktop app does not phone home. This page does not either, until you paste an analytics key.</footer>
+  </div>
+
+  <script>
+    function trackEvent(eventName, params) {
+      params = params || {};
+      console.log("[Analytics Event]: " + eventName, params);
+      if (window.gtag) gtag("event", eventName, params);
+      if (window.posthog) posthog.capture(eventName, params);
+    }
+
+    var MIN_SLICE_DEG = 30, INNER_R = 46, OUTER_R = 126, LABEL_R = 88, HOVER_RATE = 16, OPEN_MS = 280;
+    var WEIGHT_CONTRAST = 2, MIN_WEIGHT = 0.6;
+    var OPTION_WEIGHTS = {
+      JPG: 1.5, PNG: 1.5, WEBP: 1.0, TIFF: 0.8, PDF: 1.2, DOCX: 1.3, TXT: 1.0, JSON: 0.8, CSV: 0.8, Markdown: 0.8,
+      MP3: 1.5, WebM: 1.0, GIF: 1.1, "Create ZIP": 0.9, Compress: 1.1, Redact: 1.0, Crop: 1.0, Resize: 1.0,
+      AVIF: 0.8, DNG: 0.8, ProRes: 0.8, "H.265": 0.8, "Strip EXIF": 1.2, "Auto-Crop": 1.0
+    };
+    var CATS = {
+      image: {
+        shift: ["JPG", "PNG", "WEBP", "TIFF", "PDF"],
+        ctrl: ["ZIP", "Metadata", "Compress", "Color", "Rotate", "Blur", "Redact", "Crop"]
+      },
+      video: {
+        shift: ["MP4", "WebM", "GIF", "Extract MP3"],
+        ctrl: ["Compress Video", "Change Speed", "Extract MP3", "Mute Audio", "Trim Video", "Crop Video", "Split Video", "Redact Video"]
+      },
+      audio: {
+        shift: ["MP3", "WAV", "FLAC", "OGG"],
+        ctrl: ["COMPRESS", "METADATA", "NORMALIZE", "TRIM", "CHANNELS", "BLEEP"]
+      },
+      doc: {
+        shift: ["PDF", "DOCX", "TXT", "JSON", "CSV", "Markdown"],
+        ctrl: ["Compress PDF", "Split Pages", "Images to PDF", "Strip PDF Metadata"]
+      }
+    };
+    var PRESET_INFO = {
+      quick: { label: "Quick wheel", status: "Context wheel. Slice width comes from weights_for()." },
+      web: { label: "Web Optimizer", status: "Shipped preset: resize 1920, strip metadata, WEBP quality 92.", lock: "WEBP", cat: "image", mode: "shift" },
+      privacy: { label: "Privacy Cleaner", status: "Shipped preset: strip metadata, keep the source format.", lock: "Metadata", cat: "image", mode: "ctrl" }
+    };
+    var explorer = { cat: "image", mode: "shift", preset: "quick" };
+
+    function weightsFor(options) {
+      return options.map(function (option) {
+        var table = OPTION_WEIGHTS[option] == null ? 1 : OPTION_WEIGHTS[option];
+        return Math.max(MIN_WEIGHT, 1 + (table - 1) * WEIGHT_CONTRAST);
+      });
+    }
+    function segmentSpans(count, weights) {
+      if (!weights || weights.length !== count) weights = Array(count).fill(1);
+      var total = weights.reduce(function (s, w) { return s + w; }, 0) || 1;
+      var spans = weights.map(function (w) { return 360 * w / total; });
+      var floor = Math.min(MIN_SLICE_DEG, 360 / Math.max(1, count));
+      var clamped = {}, n = 0;
+      for (var pass = 0; pass < count; pass++) {
+        var short = [];
+        for (var i = 0; i < count; i++) if (spans[i] < floor - 1e-9 && !clamped[i]) short.push(i);
+        if (!short.length) break;
+        short.forEach(function (index) { if (!clamped[index]) n += 1; clamped[index] = true; });
+        var free = [];
+        for (var j = 0; j < count; j++) if (!clamped[j]) free.push(j);
+        var room = 360 - floor * n;
+        var freeTotal = free.reduce(function (s, index) { return s + weights[index]; }, 0) || 1;
+        spans = spans.map(function (_, index) { return clamped[index] ? floor : room * weights[index] / freeTotal; });
+      }
+      var result = [], edge = spans.length ? -spans[0] / 2 : 0;
+      spans.forEach(function (span) { result.push([edge + span / 2, span]); edge += span; });
+      return result;
+    }
+    function pointOnCircle(cx, cy, radius, deg) {
+      var rad = deg * Math.PI / 180;
+      return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+    }
+    function hitSegment(x, y, cx, cy, count, weights) {
+      var dist = Math.hypot(x - cx, y - cy);
+      if (dist < INNER_R || dist > OUTER_R || count <= 0) return -1;
+      var spans = segmentSpans(count, weights);
+      var first = spans[0][0] - spans[0][1] / 2;
+      var angle = (Math.atan2(y - cy, x - cx) * 180 / Math.PI + 90 - first) % 360;
+      if (angle < 0) angle += 360;
+      var covered = 0;
+      for (var i = 0; i < spans.length; i++) {
+        covered += spans[i][1];
+        if (angle < covered) return i;
+      }
+      return count - 1;
+    }
+    function outBack(t) { var c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+    function outCubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function mix(a, b, t) { return a.map(function (c, i) { return c + (b[i] - c) * t; }); }
+
+    var canvas = document.getElementById("wheel");
+    var ctx = canvas.getContext("2d");
+    var logicalW = 640, logicalH = 380;
+    var center = { x: 320, y: 176 };
+    var options = CATS.image.shift.slice();
+    var weights = weightsFor(options);
+    var levels = options.map(function () { return 0; });
+    var hovered = -1, appear = 0, appearStart = 0, opening = true;
+    var last = performance.now(), reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var statusEl = document.getElementById("wheel-status");
+    var modeChip = document.getElementById("mode-chip");
+
+    function fitCanvas() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var width = canvas.clientWidth || logicalW;
+      canvas.style.height = (width * logicalH / logicalW) + "px";
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(canvas.clientWidth * logicalH / logicalW * dpr);
+      ctx.setTransform(canvas.width / logicalW, 0, 0, canvas.height / logicalH, 0, 0);
+    }
+    function localPoint(event) {
+      var rect = canvas.getBoundingClientRect();
+      return [(event.clientX - rect.left) * logicalW / rect.width, (event.clientY - rect.top) * logicalH / rect.height];
+    }
+    function traceSegment(index, cx, cy) {
+      var spans = segmentSpans(options.length, weights);
+      var mid = spans[index][0], span = spans[index][1];
+      var start = mid - 90 - span / 2 + 3, end = mid - 90 + span / 2 - 3;
+      var rounding = Math.min(6, span / 7);
+      var move = pointOnCircle(cx, cy, OUTER_R, start + rounding);
+      ctx.beginPath();
+      ctx.moveTo(move[0], move[1]);
+      ctx.arc(cx, cy, OUTER_R, (start + rounding) * Math.PI / 180, (end - rounding) * Math.PI / 180);
+      var a = pointOnCircle(cx, cy, OUTER_R, end), b = pointOnCircle(cx, cy, OUTER_R - 10, end);
+      ctx.quadraticCurveTo(a[0], a[1], b[0], b[1]);
+      var c = pointOnCircle(cx, cy, INNER_R + 12, end);
+      ctx.lineTo(c[0], c[1]);
+      var d = pointOnCircle(cx, cy, INNER_R, end), e = pointOnCircle(cx, cy, INNER_R, end - rounding * 1.5);
+      ctx.quadraticCurveTo(d[0], d[1], e[0], e[1]);
+      ctx.arc(cx, cy, INNER_R, (end - rounding * 1.5) * Math.PI / 180, (start + rounding * 1.5) * Math.PI / 180, true);
+      var f = pointOnCircle(cx, cy, INNER_R, start), g = pointOnCircle(cx, cy, INNER_R + 12, start);
+      ctx.quadraticCurveTo(f[0], f[1], g[0], g[1]);
+      var h = pointOnCircle(cx, cy, OUTER_R - 10, start);
+      ctx.lineTo(h[0], h[1]);
+      var i0 = pointOnCircle(cx, cy, OUTER_R, start), j0 = pointOnCircle(cx, cy, OUTER_R, start + rounding);
+      ctx.quadraticCurveTo(i0[0], i0[1], j0[0], j0[1]);
+      ctx.closePath();
+    }
+    function drawEmoji(g, cx, cy, box, rotation) {
+      var scale = box * 0.42, cosX = Math.cos(rotation * Math.PI / 180);
+      var alpha = Math.max(110, Math.min(255, 180 + Math.abs(cosX) * 75)) / 255;
+      g.save();
+      g.strokeStyle = "rgba(255,255,255," + alpha + ")";
+      g.lineWidth = Math.max(1.2, box * 0.065);
+      g.lineCap = "round";
+      g.beginPath();
+      g.ellipse(cx, cy, scale, Math.max(1.5, Math.abs(scale * cosX)), 0, 0, Math.PI * 2);
+      g.stroke();
+      if (Math.abs(cosX) > 0.18) {
+        var eyeY = cy - scale * 0.28 * cosX;
+        g.fillStyle = "rgba(255,255,255," + (cosX >= 0 ? alpha : alpha * 0.45) + ")";
+        g.beginPath();
+        g.ellipse(cx - scale * 0.38, eyeY, Math.max(1, scale * 0.1), Math.max(0.6, scale * 0.1 * Math.abs(cosX)), 0, 0, Math.PI * 2);
+        g.ellipse(cx + scale * 0.38, eyeY, Math.max(1, scale * 0.1), Math.max(0.6, scale * 0.1 * Math.abs(cosX)), 0, 0, Math.PI * 2);
+        g.fill();
+        g.beginPath();
+        g.ellipse(cx, cy + scale * 0.15 * cosX, scale * 0.475, Math.max(1, scale * 0.275 * Math.abs(cosX)), 0, (cosX >= 0 ? 200 : 20) * Math.PI / 180, (cosX >= 0 ? 340 : 160) * Math.PI / 180);
+        g.stroke();
+      }
+      g.restore();
+    }
+    function wrapText(text, x, y, maxWidth) {
+      if (ctx.measureText(text).width <= maxWidth) { ctx.fillText(text, x, y); return; }
+      var parts = text.split(" ");
+      if (parts.length < 2) { ctx.fillText(text, x, y); return; }
+      ctx.fillText(parts[0], x, y - 7);
+      ctx.fillText(parts.slice(1).join(" "), x, y + 7);
+    }
+    function drawWheel() {
+      if (appear <= 0.01) return;
+      var fade = Math.min(1, Math.max(0, appear));
+      var wheelScale = 0.8 + 0.2 * Math.min(appear, 1.15);
+      var spans = segmentSpans(options.length, weights);
+      for (var i = 0; i < options.length; i++) {
+        var h = levels[i] || 0;
+        ctx.save();
+        ctx.translate(center.x, center.y);
+        ctx.scale(wheelScale * (1 + 0.045 * h), wheelScale * (1 + 0.045 * h));
+        ctx.translate(-center.x, -center.y);
+        ctx.globalAlpha = Math.min(1, fade * 1.5);
+        traceSegment(i, center.x, center.y);
+        ctx.lineJoin = "round";
+        [[9, 0.04], [6, 0.055], [3, 0.08]].forEach(function (shadow) {
+          ctx.strokeStyle = "rgba(0,0,0," + shadow[1] + ")";
+          ctx.lineWidth = shadow[0];
+          ctx.stroke();
+        });
+        if (h > 0.01) {
+          ctx.strokeStyle = "rgba(255,255,255," + (0.22 * h) + ")";
+          ctx.lineWidth = 10;
+          ctx.stroke();
+        }
+        var fill = mix([10, 10, 14, 224], [255, 255, 255, 250], h);
+        ctx.fillStyle = "rgba(" + fill[0] + "," + fill[1] + "," + fill[2] + "," + (fill[3] / 255) + ")";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255," + (0.14 + 0.86 * h) + ")";
+        ctx.lineWidth = 1 + 0.6 * h;
+        ctx.stroke();
+        var angle = spans[i][0] - 90;
+        var side = Math.abs(Math.cos(angle * Math.PI / 180));
+        var labelW = Math.min(84 - 24 * side, Math.max(42, spans[i][1] * Math.PI / 180 * 88));
+        var pos = pointOnCircle(center.x, center.y, LABEL_R, angle);
+        var text = mix([196, 200, 214], [12, 12, 16], h);
+        ctx.fillStyle = "rgb(" + text.map(function (n) { return Math.round(n); }).join(",") + ")";
+        ctx.font = "600 11px Segoe UI, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        wrapText(options[i], pos[0], pos[1], labelW);
+        ctx.restore();
+      }
+    }
+    function pillClass(on) {
+      return on
+        ? "rounded-full bg-white px-3 py-1.5 text-xs text-zinc-950"
+        : "rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:border-white/30";
+    }
+    function applyExplorer(bloom) {
+      var info = PRESET_INFO[explorer.preset] || PRESET_INFO.quick;
+      var cat = info.cat || explorer.cat;
+      var mode = info.mode || explorer.mode;
+      options = (CATS[cat][mode] || CATS.image.shift).slice();
+      weights = weightsFor(options);
+      levels = options.map(function () { return 0; });
+      hovered = info.lock ? options.indexOf(info.lock) : -1;
+      if (bloom) {
+        appear = reduced ? 1 : 0;
+        opening = !reduced;
+        appearStart = performance.now();
+      }
+      modeChip.textContent = mode === "ctrl" ? "Ctrl · tools" : "Shift · formats";
+      statusEl.textContent = info.status;
+      document.getElementById("preset-btn").textContent = info.label;
+      document.querySelectorAll(".cat-pill").forEach(function (button) {
+        var on = button.getAttribute("data-cat") === explorer.cat && explorer.preset === "quick";
+        button.setAttribute("aria-pressed", on ? "true" : "false");
+        button.className = "cat-pill " + pillClass(on);
+      });
+      document.querySelectorAll(".mode-pill").forEach(function (button) {
+        var on = button.getAttribute("data-mode") === explorer.mode && explorer.preset === "quick";
+        button.setAttribute("aria-pressed", on ? "true" : "false");
+        button.className = "mode-pill " + pillClass(on);
+      });
+    }
+    function frame(now) {
+      var dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      var k = 1 - Math.exp(-dt * HOVER_RATE);
+      for (var i = 0; i < levels.length; i++) {
+        var target = i === hovered ? 1 : 0;
+        levels[i] = Math.abs(target - levels[i]) < 0.004 ? target : levels[i] + (target - levels[i]) * k;
+      }
+      if (opening) {
+        var t = Math.min(1, (now - appearStart) / OPEN_MS);
+        appear = outBack(t);
+        if (t >= 1) opening = false;
+      }
+      ctx.clearRect(0, 0, logicalW, logicalH);
+      drawWheel();
+      requestAnimationFrame(frame);
+    }
+
+    canvas.addEventListener("mousemove", function (event) {
+      var p = localPoint(event);
+      hovered = appear > 0.8 ? hitSegment(p[0], p[1], center.x, center.y, options.length, weights) : -1;
+      canvas.style.cursor = hovered >= 0 ? "pointer" : "default";
+    });
+    canvas.addEventListener("mouseleave", function () { hovered = -1; });
+    canvas.addEventListener("click", function (event) {
+      var p = localPoint(event);
+      var index = hitSegment(p[0], p[1], center.x, center.y, options.length, weights);
+      if (index < 0) return;
+      var label = options[index];
+      trackEvent("wheel_slice_click", { label: label, cat: explorer.cat, mode: explorer.mode });
+      statusEl.textContent = "Would run " + label;
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        appear = 0;
+        opening = false;
+        document.getElementById("preset-menu").classList.add("hidden");
+        statusEl.textContent = "Wheel dismissed";
+        trackEvent("wheel_escape");
+      }
+    });
+    document.getElementById("replay-drop").addEventListener("click", function () { applyExplorer(true); });
+    document.querySelectorAll(".cat-pill").forEach(function (button) {
+      button.addEventListener("click", function () {
+        explorer.cat = button.getAttribute("data-cat");
+        explorer.preset = "quick";
+        applyExplorer(true);
+        trackEvent("format_chip_click", { cat: explorer.cat, mode: explorer.mode });
+      });
+    });
+    document.querySelectorAll(".mode-pill").forEach(function (button) {
+      button.addEventListener("click", function () {
+        explorer.mode = button.getAttribute("data-mode");
+        explorer.preset = "quick";
+        applyExplorer(true);
+        trackEvent("modifier_toggle", { mode: explorer.mode, cat: explorer.cat });
+      });
+    });
+    document.getElementById("preset-btn").addEventListener("click", function () {
+      var menu = document.getElementById("preset-menu");
+      var open = menu.classList.toggle("hidden") === false;
+      this.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.querySelectorAll(".preset-opt").forEach(function (button) {
+      button.addEventListener("click", function () {
+        explorer.preset = button.getAttribute("data-preset");
+        var info = PRESET_INFO[explorer.preset];
+        if (info.cat) explorer.cat = info.cat;
+        if (info.mode) explorer.mode = info.mode;
+        document.getElementById("preset-menu").classList.add("hidden");
+        applyExplorer(true);
+        trackEvent("preset_select", { preset: explorer.preset });
+      });
+    });
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest("#preset-menu") && event.target.id !== "preset-btn") {
+        document.getElementById("preset-menu").classList.add("hidden");
+      }
+    });
+
+    document.querySelectorAll(".aud-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var role = tab.getAttribute("data-role");
+        trackEvent("audience_tab_click", { role: role });
+        document.querySelectorAll(".aud-tab").forEach(function (other) {
+          var on = other === tab;
+          other.setAttribute("aria-selected", on ? "true" : "false");
+          other.className = on
+            ? "aud-tab rounded-full bg-white px-3 py-1.5 text-xs text-zinc-950"
+            : "aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300";
+        });
+        document.querySelectorAll("#audience-grid article").forEach(function (card) {
+          card.classList.toggle("hidden", role !== "all" && card.getAttribute("data-role") !== role);
+        });
+        var map = { ml: ["image", "shift"], photo: ["image", "shift"], shop: ["image", "shift"], creator: ["video", "shift"], design: ["image", "ctrl"], writer: ["doc", "shift"], legal: ["doc", "ctrl"], privacy: ["image", "ctrl"] };
+        if (map[role]) {
+          explorer.cat = map[role][0];
+          explorer.mode = map[role][1];
+          explorer.preset = role === "privacy" ? "privacy" : "quick";
+          applyExplorer(true);
+        }
+        var formValue = tab.getAttribute("data-form");
+        if (formValue) document.getElementById("role").value = formValue;
+      });
+    });
+    document.querySelectorAll(".use-card").forEach(function (card) {
+      card.addEventListener("click", function () {
+        var formValue = card.getAttribute("data-form");
+        document.getElementById("role").value = formValue;
+        trackEvent("audience_card_click", { role: card.getAttribute("data-role") });
+      });
+    });
+
+    document.getElementById("github-issue").addEventListener("click", function (event) {
+      var body = ["## Role", document.getElementById("role").value, "", "## Wanted", document.getElementById("wanted").value || "N/A", "", "## Pipeline", document.getElementById("feature").value || "N/A", "", "## Feedback", document.getElementById("bug").value || "N/A", "", "KhartTool 0.1.0 / Windows"].join("\n");
+      event.currentTarget.href = "https://github.com/AKhart1/KhartTool/issues/new?title=" + encodeURIComponent("MVP feedback") + "&body=" + encodeURIComponent(body);
+      trackEvent("github_issue_click");
+    });
+    document.getElementById("feedback-form").addEventListener("submit", function (event) {
+      trackEvent("feedback_submit", { role: document.getElementById("role").value });
+      if (document.querySelector("input[name='access_key']").value === "YOUR_ACCESS_KEY_HERE") {
+        event.preventDefault();
+        document.getElementById("form-note").textContent = "Add a Web3Forms or Formspree key before submitting. The GitHub buttons still work.";
+      }
+    });
+
+    var flowCanvas = document.getElementById("flow");
+    var fctx = flowCanvas.getContext("2d");
+    var flowW = 880, flowH = 460, flowToken = 0, flowT = 0, flowName = null;
+    var FLOWS = {
+      shift: {
+        file: "brief.docx", out: "brief.pdf", key: "⇧ Shift",
+        options: CATS.doc.shift, target: "PDF",
+        caption: "Shift-drag opens the format wheel on the cursor. Releasing on PDF writes beside the source. Nothing is uploaded."
+      },
+      ctrl: {
+        file: "photo.jpg", out: "photo.jpg", key: "⌃ Ctrl",
+        options: CATS.image.ctrl, target: "Metadata",
+        caption: "Ctrl-drag opens tools. Metadata, or the Privacy Cleaner preset, strips EXIF and GPS on this PC."
+      }
+    };
+    function fitFlow() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var width = flowCanvas.clientWidth || flowW;
+      flowCanvas.style.height = (width * flowH / flowW) + "px";
+      flowCanvas.width = Math.round(width * dpr);
+      flowCanvas.height = Math.round(width * flowH / flowW * dpr);
+      fctx.setTransform(flowCanvas.width / flowW, 0, 0, flowCanvas.height / flowH, 0, 0);
+    }
+    function chip(g, x, y, text) {
+      g.save();
+      g.font = "12px Inter, Segoe UI, sans-serif";
+      var w = Math.max(92, g.measureText(text).width + 22);
+      g.fillStyle = "#18181b";
+      g.strokeStyle = "rgba(255,255,255,0.22)";
+      g.beginPath();
+      g.roundRect(x, y, w, 28, 14);
+      g.fill(); g.stroke();
+      g.fillStyle = "#fff";
+      g.textAlign = "left";
+      g.textBaseline = "middle";
+      g.fillText(text, x + 11, y + 14);
+      g.restore();
+      return w;
+    }
+    function osCursor(g, x, y) {
+      g.save();
+      g.translate(x, y);
+      g.scale(1.35, 1.35);
+      g.shadowColor = "rgba(0,0,0,0.55)";
+      g.shadowBlur = 6;
+      g.shadowOffsetX = 0;
+      g.shadowOffsetY = 4;
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.lineTo(0, 18);
+      g.lineTo(4.2, 13.6);
+      g.lineTo(8.4, 21.2);
+      g.lineTo(11.1, 20);
+      g.lineTo(6.8, 12.4);
+      g.lineTo(12.4, 12.2);
+      g.closePath();
+      g.fillStyle = "#fff";
+      g.strokeStyle = "#09090b";
+      g.lineWidth = 1.35;
+      g.lineJoin = "round";
+      g.fill();
+      g.shadowColor = "transparent";
+      g.stroke();
+      g.restore();
+    }
+    function dragGhost(g, x, y, name) {
+      g.save();
+      g.translate(x + 16, y + 20);
+      g.shadowColor = "rgba(0,0,0,0.45)";
+      g.shadowBlur = 8;
+      g.shadowOffsetY = 3;
+      g.font = "12px Inter, Segoe UI, sans-serif";
+      var w = Math.max(108, g.measureText(name).width + 36);
+      g.fillStyle = "rgba(24,24,27,0.94)";
+      g.strokeStyle = "rgba(255,255,255,0.28)";
+      g.beginPath();
+      g.roundRect(0, 0, w, 28, 8);
+      g.fill();
+      g.shadowColor = "transparent";
+      g.stroke();
+      g.strokeStyle = "#fff";
+      g.lineWidth = 1.2;
+      g.strokeRect(8, 6, 10, 14);
+      g.beginPath();
+      g.moveTo(14, 6);
+      g.lineTo(18, 10);
+      g.lineTo(14, 10);
+      g.closePath();
+      g.stroke();
+      g.fillStyle = "#fff";
+      g.textAlign = "left";
+      g.textBaseline = "middle";
+      g.fillText(name, 24, 14);
+      g.restore();
+    }
+    function setFlowKey(label, down) {
+      var key = document.getElementById("flow-key");
+      document.getElementById("flow-key-label").textContent = label;
+      key.classList.toggle("is-down", !!down);
+    }
+    function paintFlowWheel(cx, cy, opts, wts, lit, scale) {
+      var spans = segmentSpans(opts.length, wts);
+      for (var i = 0; i < opts.length; i++) {
+        var h = i === lit ? 1 : 0;
+        fctx.save();
+        fctx.translate(cx, cy);
+        fctx.scale(scale * (1 + 0.04 * h), scale * (1 + 0.04 * h));
+        fctx.translate(-cx, -cy);
+        var mid = spans[i][0], span = spans[i][1];
+        var start = mid - 90 - span / 2 + 3, end = mid - 90 + span / 2 - 3;
+        var rounding = Math.min(6, span / 7);
+        var move = pointOnCircle(cx, cy, OUTER_R, start + rounding);
+        fctx.beginPath();
+        fctx.moveTo(move[0], move[1]);
+        fctx.arc(cx, cy, OUTER_R, (start + rounding) * Math.PI / 180, (end - rounding) * Math.PI / 180);
+        var a = pointOnCircle(cx, cy, OUTER_R, end), b = pointOnCircle(cx, cy, OUTER_R - 10, end);
+        fctx.quadraticCurveTo(a[0], a[1], b[0], b[1]);
+        var c = pointOnCircle(cx, cy, INNER_R + 12, end);
+        fctx.lineTo(c[0], c[1]);
+        var d = pointOnCircle(cx, cy, INNER_R, end), e = pointOnCircle(cx, cy, INNER_R, end - rounding * 1.5);
+        fctx.quadraticCurveTo(d[0], d[1], e[0], e[1]);
+        fctx.arc(cx, cy, INNER_R, (end - rounding * 1.5) * Math.PI / 180, (start + rounding * 1.5) * Math.PI / 180, true);
+        var f = pointOnCircle(cx, cy, INNER_R, start), gg = pointOnCircle(cx, cy, INNER_R + 12, start);
+        fctx.quadraticCurveTo(f[0], f[1], gg[0], gg[1]);
+        var hpt = pointOnCircle(cx, cy, OUTER_R - 10, start), i0 = pointOnCircle(cx, cy, OUTER_R, start), j0 = pointOnCircle(cx, cy, OUTER_R, start + rounding);
+        fctx.lineTo(hpt[0], hpt[1]);
+        fctx.quadraticCurveTo(i0[0], i0[1], j0[0], j0[1]);
+        fctx.closePath();
+        var fill = mix([10, 10, 14, 224], [255, 255, 255, 250], h);
+        fctx.fillStyle = "rgba(" + fill[0] + "," + fill[1] + "," + fill[2] + "," + (fill[3] / 255) + ")";
+        fctx.strokeStyle = "rgba(255,255,255," + (0.16 + 0.84 * h) + ")";
+        fctx.lineWidth = 1.2;
+        fctx.fill();
+        fctx.stroke();
+        var angle = spans[i][0] - 90;
+        var pos = pointOnCircle(cx, cy, LABEL_R, angle);
+        var text = mix([196, 200, 214], [12, 12, 16], h);
+        fctx.fillStyle = "rgb(" + text.map(function (n) { return Math.round(n); }).join(",") + ")";
+        fctx.font = "600 11px Inter, Segoe UI, sans-serif";
+        fctx.textAlign = "center";
+        fctx.textBaseline = "middle";
+        fctx.fillText(opts[i], pos[0], pos[1]);
+        fctx.restore();
+      }
+    }
+    function drawFlow(t, spec) {
+      fctx.clearRect(0, 0, flowW, flowH);
+      fctx.fillStyle = "#0c0c0f";
+      fctx.fillRect(0, 0, flowW, flowH);
+      var src = { x: 72, y: 196 };
+      chip(fctx, src.x, src.y, spec.file);
+      var approach = Math.min(1, Math.max(0, t / 0.16));
+      var grabbed = t >= 0.16 && t < 0.82;
+      var carry = Math.min(1, Math.max(0, (t - 0.22) / 0.18));
+      var hub = { x: 520, y: 230 };
+      var fileTip = { x: src.x + 18, y: src.y + 8 };
+      var px = 640 + (fileTip.x - 640) * outCubic(approach);
+      var py = 390 + (fileTip.y - 390) * outCubic(approach);
+      if (carry > 0 && t < 0.62) {
+        px = fileTip.x + (hub.x - fileTip.x) * outCubic(carry);
+        py = fileTip.y + (hub.y - fileTip.y) * outCubic(carry);
+      }
+      var bloom = Math.min(1, Math.max(0, (t - 0.4) / 0.14));
+      var wts = weightsFor(spec.options);
+      var target = Math.max(0, spec.options.indexOf(spec.target));
+      var flick = Math.min(1, Math.max(0, (t - 0.58) / 0.16));
+      var aim = pointOnCircle(hub.x, hub.y, 78, segmentSpans(spec.options.length, wts)[target][0] - 90);
+      if (flick > 0 && t < 0.84) {
+        px = hub.x + (aim[0] - hub.x) * flick;
+        py = hub.y + (aim[1] - hub.y) * flick;
+      }
+      var held = t >= 0.18 && t < 0.82;
+      setFlowKey(spec.key, held);
+      if (bloom > 0.02 && t < 0.9) {
+        paintFlowWheel(hub.x, hub.y, spec.options, wts, flick > 0.4 ? target : -1, 0.7 + 0.3 * outBack(Math.min(1, bloom)));
+      }
+      if (t < 0.9) {
+        osCursor(fctx, px, py);
+        if (grabbed) dragGhost(fctx, px, py, spec.file);
+      }
+      if (t > 0.84) {
+        var pulse = Math.min(1, (t - 0.84) / 0.16);
+        fctx.save();
+        fctx.globalAlpha = pulse;
+        chip(fctx, src.x, src.y + 44, spec.out);
+        fctx.globalAlpha = 1 - pulse;
+        fctx.strokeStyle = "#34d399";
+        fctx.lineWidth = 2;
+        fctx.beginPath();
+        fctx.roundRect(src.x - 6 - pulse * 8, src.y + 38 - pulse * 6, 150 + pulse * 16, 40 + pulse * 12, 12);
+        fctx.stroke();
+        fctx.globalAlpha = pulse;
+        fctx.fillStyle = "#34d399";
+        fctx.font = "11px Inter, Segoe UI, sans-serif";
+        fctx.textAlign = "left";
+        fctx.fillText("beside the source", src.x, src.y + 90);
+        fctx.restore();
+      }
+    }
+    function playFlow(name) {
+      var spec = FLOWS[name];
+      var token = ++flowToken;
+      flowName = name;
+      trackEvent("flow_play", { flow: name });
+      document.getElementById("flow-caption").textContent = spec.caption;
+      if (reduced) { flowT = 1; drawFlow(1, spec); return; }
+      var started = performance.now();
+      function tick(now) {
+        if (token !== flowToken) return;
+        flowT = Math.min(1, (now - started) / 4200);
+        drawFlow(flowT, spec);
+        if (flowT < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+    document.getElementById("play-shift").addEventListener("click", function () { playFlow("shift"); });
+    document.getElementById("play-ctrl").addEventListener("click", function () { playFlow("ctrl"); });
+    document.getElementById("flow-reset").addEventListener("click", function () {
+      flowToken += 1;
+      flowT = 0;
+      drawFlow(0, FLOWS.shift);
+      document.getElementById("flow-caption").textContent = "Reset. The file is sitting on the desktop. Play either flow.";
+      trackEvent("flow_reset");
+    });
+    var logoVideo = document.getElementById("logo-video");
+    logoVideo.addEventListener("error", function () {
+      var mark = document.createElement("span");
+      mark.className = "inline-block h-[34px] w-[34px] shrink-0 rounded-full border border-white/70";
+      mark.setAttribute("aria-hidden", "true");
+      logoVideo.replaceWith(mark);
+    });
+
+    fitCanvas();
+    fitFlow();
+    window.addEventListener("resize", function () { fitCanvas(); fitFlow(); if (!flowName) drawFlow(0, FLOWS.shift); });
+    if (window.lucide) lucide.createIcons();
+    applyExplorer(false);
+    requestAnimationFrame(frame);
+    drawFlow(0, FLOWS.shift);
+    if (reduced) { opening = false; appear = 1; }
+  </script>
+</body>
+</html>
