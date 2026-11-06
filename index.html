@@ -3,8 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KhartTool — Drop a file. The wheel already knows.</title>
-  <meta name="description" content="KhartTool 0.1.0 is an offline Windows drop pill. Shift opens the format wheel, Ctrl opens tools. No telemetry in the desktop app." />
+  <title>KhartTool — Convert, shrink and clean files by dragging them (free, offline, Windows)</title>
+  <meta name="description" content="KhartTool is a free Windows app: drag a photo, video, audio file or document onto it to convert, shrink or remove hidden data. Works offline, nothing is uploaded." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="KhartTool — convert, shrink and clean any file by dragging it" />
+  <meta property="og:description" content="Free Windows app. Drop a file, hold Shift, pick a format. Works offline — nothing is uploaded." />
+  <meta property="og:url" content="https://akhart1.github.io/KhartTool/" />
+  <meta property="og:image" content="https://akhart1.github.io/KhartTool/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#09090b" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%2309090b'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,29 +30,29 @@
     };
   </script>
   <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-  <!--
-    Google Analytics 4 — paste a measurement ID, then uncomment.
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){ dataLayer.push(arguments); }
-      gtag("js", new Date());
-      gtag("config", "G-XXXXXXXXXX");
-    </script>
-  -->
-  <!--
-    PostHog — paste a project key, then uncomment.
-    <script>
-      !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-      posthog.init("phc_YOUR_PROJECT_KEY", { api_host: "https://us.i.posthog.com", person_profiles: "identified_only" });
-    </script>
-  -->
+  <!-- Analytics: the Cloudflare Web Analytics snippet is at the very bottom of this file. -->
   <style>
+    :root { color-scheme: dark; }
     body { background: #09090b; color: #fafafa; }
+    button { background-color: transparent; color: inherit; }
+    select, option, optgroup { background-color: #18181b; color: #fafafa; }
+    summary { list-style-position: inside; }
+    a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid rgba(165,180,252,.8); outline-offset: 2px;
+    }
+    .glass {
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 20px 50px -30px rgba(0,0,0,0.8);
+    }
+    .accent-text {
+      background: linear-gradient(90deg, #a5b4fc, #7dd3fc 50%, #6ee7b7);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
     .atmosphere {
       background:
         radial-gradient(640px 320px at 12% -8%, rgba(255,255,255,0.07), transparent 60%),
-        radial-gradient(520px 280px at 92% 0%, rgba(140,160,255,0.07), transparent 55%);
+        radial-gradient(560px 300px at 92% 0%, rgba(129,140,248,0.14), transparent 55%),
+        radial-gradient(700px 420px at 50% 120%, rgba(52,211,153,0.06), transparent 60%);
     }
     .stage {
       background: rgba(12, 12, 15, 0.92);
@@ -144,11 +152,13 @@
     <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
       <a href="#top" class="flex items-center gap-2 text-sm font-medium tracking-tight">
         <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-white/15"><i data-lucide="circle" class="h-3.5 w-3.5"></i></span>
-        KhartTool <span class="text-zinc-500">0.1.0</span>
+        KhartTool <span class="text-zinc-400">0.1.0</span>
       </a>
-      <nav class="flex items-center gap-5 text-sm text-zinc-400">
-        <a href="#audiences" class="hover:text-white">Audiences</a>
-        <a href="#how" class="hidden hover:text-white sm:inline">How it works</a>
+      <nav class="flex items-center gap-5 text-sm text-zinc-300">
+        <a href="#use-cases" class="hover:text-white">Use cases</a>
+        <a href="#presets" class="hidden hover:text-white md:inline">Presets</a>
+        <a href="#roadmap" class="hidden hover:text-white lg:inline">Coming next</a>
+        <a href="#how" class="hidden hover:text-white sm:inline">See it work</a>
         <a href="#feedback" class="hover:text-white">Feedback</a>
         <a href="#download" onclick="trackEvent('mvp_download_click', { placement: 'nav' })" class="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-zinc-950 hover:bg-zinc-200">Download</a>
       </nav>
@@ -157,36 +167,37 @@
     <main id="top">
       <section class="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-6 lg:grid-cols-[0.92fr_1.08fr]">
         <div>
-          <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">Windows 10 / 11 · Free Edition · Offline</p>
-          <h1 class="mt-4 text-4xl font-medium leading-[1.05] tracking-tight sm:text-5xl">Drop a file.<br />The wheel already knows.</h1>
-          <p class="mt-5 max-w-xl text-base leading-relaxed text-zinc-400">A frameless pill sits above your windows. Hold Shift and a weight-sized format wheel opens at the cursor. Hold Ctrl and the tool wheel opens. Nothing is uploaded.</p>
+          <p class="text-xs uppercase tracking-[0.22em] text-zinc-400">Drop a file. The wheel already knows.</p>
+          <h1 class="mt-4 text-4xl font-medium leading-[1.05] tracking-tight sm:text-5xl">Convert, shrink and clean any file — <span class="accent-text">just drag it.</span></h1>
+          <p class="mt-5 max-w-xl text-base leading-relaxed text-zinc-300">KhartTool is a small, free Windows app that sits on your desktop. Drag a photo, video, song or document onto it, hold Shift and pick the format you want — the new file appears right next to the original. Nothing is uploaded, and there is no account to create.</p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a href="https://github.com/AKhart1/KhartTool/releases/latest" onclick="trackEvent('mvp_download_click', { placement: 'hero' })" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+            <a data-dl="setup" data-placement="hero" href="https://github.com/AKhart1/KhartTool/releases/latest" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-zinc-950 shadow-[0_10px_40px_-8px_rgba(165,180,252,0.55)] hover:bg-zinc-200">
               <i data-lucide="download" class="h-4 w-4"></i>
-              Download KhartTool MVP (v0.1.0-alpha)
+              Download free for Windows
             </a>
-            <a href="#how" class="rounded-full border border-white/10 px-5 py-3 text-sm text-zinc-300 hover:border-white/30">Watch the drop</a>
+            <a href="#how" class="rounded-full border border-white/10 px-5 py-3 text-sm text-zinc-300 hover:border-white/30">See it work</a>
           </div>
+          <p class="mt-3 text-xs text-zinc-400">v0.1.0 · Windows 10/11, 64-bit · <a href="#download" class="text-zinc-300 hover:underline">Portable version &amp; safety info</a></p>
           <ul class="mt-5 flex flex-wrap gap-2 text-xs text-zinc-300">
-            <li class="rounded-full border border-white/10 bg-card px-3 py-1">Windows 10/11</li>
-            <li class="rounded-full border border-white/10 bg-card px-3 py-1">Portable .exe + zip</li>
-            <li class="rounded-full border border-white/10 bg-card px-3 py-1">100% local / offline</li>
-            <li class="rounded-full border border-white/10 bg-card px-3 py-1">Zero telemetry</li>
+            <li class="rounded-full border border-white/10 bg-card glass px-3 py-1">Windows 10/11</li>
+            <li class="rounded-full border border-white/10 bg-card glass px-3 py-1">Installer or portable</li>
+            <li class="rounded-full border border-white/10 bg-card glass px-3 py-1">Works offline</li>
+            <li class="rounded-full border border-white/10 bg-card glass px-3 py-1">No uploads, no account</li>
           </ul>
         </div>
 
         <div>
           <div class="stage overflow-hidden rounded-2xl">
-            <div class="flex items-center justify-between border-b border-white/[0.08] px-4 py-2 text-[11px] text-zinc-500">
+            <div class="flex items-center justify-between border-b border-white/[0.08] px-4 py-2 text-[11px] text-zinc-400">
               <span>KhartTool</span>
               <span id="mode-chip">Shift · formats</span>
             </div>
             <div class="relative px-4 pb-4 pt-5" id="drop-stage">
               <div class="pill mx-auto flex items-center gap-2.5 px-2" id="live-pill">
-                <video id="logo-video" class="h-[34px] w-[34px] shrink-0 rounded-full object-cover" src="src/assets/logo.mp4" autoplay muted loop playsinline aria-label="KhartTool logo"></video>
+                <video id="logo-video" class="h-[34px] w-[34px] shrink-0 rounded-full object-cover" src="logo.mp4" autoplay muted loop playsinline aria-label="KhartTool logo"></video>
                 <div class="min-w-0 flex-1 leading-tight">
                   <div class="truncate text-[13px] font-semibold text-white">Drop files</div>
-                  <div class="truncate text-[11px] text-zinc-400">Shift: quick · Ctrl: tools</div>
+                  <div class="truncate text-[11px] text-zinc-300">Shift: quick · Ctrl: tools</div>
                 </div>
                 <div class="relative shrink-0">
                   <button type="button" id="preset-btn" class="rounded-md bg-white/10 px-1.5 py-1 text-[10px] text-white" aria-expanded="false" aria-controls="preset-menu">Quick wheel</button>
@@ -212,156 +223,553 @@
                 </div>
               </div>
             </div>
-            <div class="flex items-center justify-between gap-3 border-t border-white/[0.08] px-4 py-2 text-[11px] text-zinc-500">
-              <span id="wheel-status">Shift drop · folder · slices sized by weight</span>
+            <div class="flex items-center justify-between gap-3 border-t border-white/[0.08] px-4 py-2 text-[11px] text-zinc-400">
+              <span id="wheel-status">Shift: change format · Ctrl: tools</span>
               <button type="button" id="replay-drop" class="text-zinc-300 hover:text-white">Replay bloom</button>
             </div>
           </div>
-          <p class="mt-3 text-[11px] leading-relaxed text-zinc-500">Slices match <span class="text-zinc-400">ActionResolver</span>. The pill mark is <span class="text-zinc-400">assets/logo.mp4</span>, the same clip the app plays. Presets are the two built-ins in <span class="text-zinc-400">presets.json</span>.</p>
+          <p class="mt-3 text-[11px] leading-relaxed text-zinc-400">Try it: pick a file type, then hover the wheel. Bigger slices are the formats people pick most.</p>
         </div>
       </section>
 
       <section id="how" class="mx-auto max-w-6xl px-6 pb-20">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 class="text-2xl font-medium tracking-tight">How KhartTool operates</h2>
-            <p class="mt-2 max-w-2xl text-sm text-zinc-400">The wheel opens at the cursor. Shift is formats. Ctrl is tools. Playback uses the same slice math as the app.</p>
+            <h2 class="text-2xl font-medium tracking-tight">See it work</h2>
+            <p class="mt-2 max-w-2xl text-sm text-zinc-300">Three ways to use it: hold Shift to change a format, hold Ctrl for tools like ZIP or compress, or pick a preset and drop a whole folder. Press a button to watch.</p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button type="button" id="play-shift" class="rounded-full bg-white px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-200">Play Shift flow</button>
-            <button type="button" id="play-ctrl" class="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-200 hover:border-white/30">Play Ctrl flow</button>
-            <button type="button" id="flow-reset" class="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-400 hover:text-white">Reset</button>
+            <button type="button" id="play-shift" class="rounded-full bg-white px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-200">Shift: convert a file</button>
+            <button type="button" id="play-ctrl" class="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-200 hover:border-white/30">Ctrl: 3 photos → ZIP</button>
+            <button type="button" id="play-preset" class="rounded-full border border-indigo-300/40 bg-indigo-400/10 px-4 py-2 text-sm text-indigo-100 hover:border-indigo-300/80">Preset: folder → WebP</button>
+            <button type="button" id="flow-reset" class="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:text-white">Reset</button>
           </div>
         </div>
         <div class="stage relative mt-5 overflow-hidden rounded-2xl">
           <canvas id="flow" width="880" height="460" aria-label="Animated Shift and Ctrl drag walkthrough"></canvas>
           <kbd id="flow-key" class="flow-key pointer-events-none absolute left-5 top-5" aria-hidden="true"><span id="flow-led" class="flow-led"></span><span id="flow-key-label">⇧ Shift</span></kbd>
-          <p id="flow-caption" class="border-t border-white/[0.08] px-4 py-3 text-xs text-zinc-400">Press Play. A file is grabbed, the modifier lights, and the wheel blooms on the cursor.</p>
+          <p id="flow-caption" class="border-t border-white/[0.08] px-4 py-3 text-xs text-zinc-300">Press Play. A file is grabbed, the modifier lights, and the wheel blooms on the cursor.</p>
         </div>
       </section>
 
-      <section id="audiences" class="mx-auto max-w-6xl px-6 pb-20">
-        <h2 class="text-2xl font-medium tracking-tight">Eight jobs, one drop</h2>
-        <p class="mt-2 max-w-2xl text-sm text-zinc-400">Filter a profile. The feedback role follows the card you pick.</p>
-        <div class="mt-5 flex flex-wrap gap-2" role="tablist">
-          <button type="button" class="aud-tab rounded-full bg-white px-3 py-1.5 text-xs text-zinc-950" data-role="all" aria-selected="true">All</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="ml" data-form="AI / ML">Research</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="photo" data-form="Photographer">Photo</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="shop" data-form="E-commerce">Commerce</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="legal" data-form="Legal / Healthcare / Finance">Legal</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="creator" data-form="Video / Creator">Motion</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="design" data-form="UI / Frontend">Design</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="writer" data-form="Writer / Educator">Writing</button>
-          <button type="button" class="aud-tab rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300" data-role="privacy" data-form="Privacy / Power user">Privacy</button>
+      <!--
+  KhartTool — Expanded "Use cases" section
+  Drop-in replacement for <section id="audiences"> … </section> in index.html.
+  Uses the page's existing Tailwind CDN config (bg-card glass, canvas, Inter) and Lucide icons
+  (lucide.createIcons() already runs at the end of the page).
+  The cards keep the class "use-card" and data-form values, so your existing click handler
+  still pre-fills the Role dropdown in the feedback form.
+  Also update the nav link:  <a href="#use-cases" ...>Use cases</a>
+-->
+<style>
+  .uc-card { transition: border-color .2s ease, transform .2s ease; }
+  .uc-card:hover { border-color: rgba(165,180,252,.45); transform: translateY(-2px); box-shadow: 0 18px 50px -24px rgba(129,140,248,.45); }
+  .uc-label { font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+  .uc-key {
+    display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 6px;
+    background: #27272a; border: 1px solid rgba(255,255,255,.18); border-bottom-width: 2px;
+    font-size: 11px; font-weight: 600; color: #fafafa; white-space: nowrap;
+  }
+  .uc-file {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px;
+    background: #09090b; border: 1px solid rgba(255,255,255,.1); font-size: 11px; color: #d4d4d8;
+    white-space: nowrap;
+  }
+  .uc-file.bad  { color: #fca5a5; border-color: rgba(248,113,113,.25); }
+  .uc-file.good { color: #6ee7b7; border-color: rgba(52,211,153,.3); }
+  @media (prefers-reduced-motion: reduce) { .uc-card:hover { transform: none; } }
+</style>
+
+<section id="use-cases" class="mx-auto max-w-6xl px-6 pb-20">
+  <p class="text-xs uppercase tracking-[0.22em] text-zinc-400">Use cases</p>
+  <h2 class="mt-3 text-2xl font-medium tracking-tight sm:text-3xl">The small file chores you do every week — now one drag.</h2>
+  <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">
+    No website to find, no upload bar, no "sign up to download". Drag the file onto KhartTool, hold
+    <span class="uc-key">⇧ Shift</span> to change the format or <span class="uc-key">Ctrl</span> for tools,
+    and the new file appears right next to the original.
+  </p>
+
+  <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+    <!-- 1 · Featured: Privacy -->
+    <article data-role="privacy" data-form="Privacy / Power user"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6 lg:col-span-2">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="map-pin-off" class="h-4 w-4"></i></span>
+      </div>
+      <h3 class="mt-4 text-lg font-medium tracking-tight">Share photos without sharing where you live</h3>
+      <div class="mt-4 grid gap-5 sm:grid-cols-3">
+        <div>
+          <p class="uc-label text-rose-300">The annoyance</p>
+          <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Every phone photo quietly stores the exact spot it was taken, plus your phone model and the time. Post a picture of your new couch on a marketplace and you may have just posted your home address.</p>
         </div>
-        <div class="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3" id="audience-grid">
-          <article data-role="ml" data-form="AI / ML" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Dataset</span>
-            <h3 class="mt-3 text-sm font-medium">AI researchers &amp; ML engineers</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">You are about to train. The folder is mixed sizes, leftover EXIF, and a few files that will not open.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Drop <span class="text-white">train/</span>. This build resizes with Lanczos, strips metadata, and writes PNG, JPG, or WebP, up to 5,000 files. RGB normalization, corrupt-file discard, and a 512 center-crop are the v0.2 chain above — not a shipped dataloader.</p>
+        <div>
+          <p class="uc-label text-indigo-300">The fix</p>
+          <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Drag the photos (or the whole folder) onto KhartTool, hold <span class="uc-key">Ctrl</span>, release on <span class="text-white">Metadata</span>. Or pick the <span class="text-white">Privacy Cleaner</span> preset once and every drop is cleaned.</p>
+        </div>
+        <div>
+          <p class="uc-label text-emerald-300">What you get</p>
+          <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Clean copies that look identical but carry no location or camera details — made on your PC, never uploaded anywhere.</p>
+        </div>
+      </div>
+      <div class="mt-5 flex flex-wrap items-center gap-2">
+        <span class="uc-file bad"><i data-lucide="map-pin" class="h-3 w-3"></i>IMG_2041.jpg · GPS, phone model</span>
+        <i data-lucide="arrow-right" class="h-3.5 w-3.5 text-zinc-500"></i>
+        <span class="uc-file good"><i data-lucide="shield-check" class="h-3 w-3"></i>IMG_2041.jpg · nothing hidden</span>
+      </div>
+    </article>
+
+    <!-- 2 · Email attachment too big -->
+    <article data-role="legal" data-form="Legal / Healthcare / Finance"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="mail-x" class="h-4 w-4"></i></span>
+      <h3 class="mt-4 text-base font-medium tracking-tight">When the email bounces: "attachment too large"</h3>
+      <p class="uc-label mt-4 text-rose-300">The annoyance</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">You scanned a contract with your phone. Now it's eight photos, 40 MB, and the only "free" fix is a website that wants you to upload a signed contract to a stranger's server.</p>
+      <p class="uc-label mt-4 text-indigo-300">The fix</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Drop the photos → <span class="uc-key">Ctrl</span> → <span class="text-white">Images to PDF</span>. Then drop the PDF → <span class="text-white">Compress PDF</span>.</p>
+      <p class="uc-label mt-4 text-emerald-300">What you get</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">One tidy PDF small enough to send — and the document never left your desk.</p>
+    </article>
+
+    <!-- 3 · Slow website -->
+    <article data-role="shop" data-form="E-commerce"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="gauge" class="h-4 w-4"></i></span>
+      <h3 class="mt-4 text-base font-medium tracking-tight">Your shop is slow because the photos are huge</h3>
+      <p class="uc-label mt-4 text-rose-300">The annoyance</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">The supplier sent 15 MB product shots. Pages crawl on phones, and shrinking 200 images one by one is an afternoon you don't have.</p>
+      <p class="uc-label mt-4 text-indigo-300">The fix</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Choose the <span class="text-white">Web Optimizer</span> preset and drop the whole folder. It resizes, strips hidden data and saves web-ready WebP.</p>
+      <p class="uc-label mt-4 text-emerald-300">What you get</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">The whole catalogue in one drop (up to 5,000 files) instead of 200 trips through an online resizer.</p>
+    </article>
+
+    <!-- 4 · Video → audio / GIF -->
+    <article data-role="creator" data-form="Video / Creator"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="clapperboard" class="h-4 w-4"></i></span>
+      <h3 class="mt-4 text-base font-medium tracking-tight">Grab the audio, make a GIF, cut the boring bit</h3>
+      <p class="uc-label mt-4 text-rose-300">The annoyance</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">You want the sound from a voice memo video, or a short GIF for a chat. Video editors take ages to open; online converters add a watermark.</p>
+      <p class="uc-label mt-4 text-indigo-300">The fix</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Drop the clip → <span class="uc-key">⇧ Shift</span> → <span class="text-white">Extract MP3</span> or <span class="text-white">GIF</span>. Need to trim, mute or speed it up? <span class="uc-key">Ctrl</span> has those.</p>
+      <p class="uc-label mt-4 text-emerald-300">What you get</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">The clip you wanted, no watermark, without opening a single editor.</p>
+    </article>
+
+    <!-- 5 · Blur before posting -->
+    <article data-role="design" data-form="UI / Frontend"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
+      <h3 class="mt-4 text-base font-medium tracking-tight">Hide the name in the screenshot before you post it</h3>
+      <p class="uc-label mt-4 text-rose-300">The annoyance</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">A screenshot for a bug report or a group chat shows an email, an order number or a face. Opening Paint to scribble over it looks messy and takes too long.</p>
+      <p class="uc-label mt-4 text-indigo-300">The fix</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Drop the screenshot → <span class="uc-key">Ctrl</span> → <span class="text-white">Blur</span>, <span class="text-white">Redact</span> or <span class="text-white">Crop</span>.</p>
+      <p class="uc-label mt-4 text-emerald-300">What you get</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Share it with confidence — in seconds, not a trip through an image editor.</p>
+    </article>
+
+    <!-- 6 · Wrong document format -->
+    <article data-role="writer" data-form="Writer / Educator"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="file-text" class="h-4 w-4"></i></span>
+      <h3 class="mt-4 text-base font-medium tracking-tight">"Can you send it as a PDF?" — done before they finish asking</h3>
+      <p class="uc-label mt-4 text-rose-300">The annoyance</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">The school portal only takes PDF. The client sent a spreadsheet as CSV but the tool needs JSON. Your notes are in Markdown and your teacher wants Word.</p>
+      <p class="uc-label mt-4 text-indigo-300">The fix</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Drop the file → <span class="uc-key">⇧ Shift</span> → pick <span class="text-white">PDF, DOCX, TXT, CSV, JSON</span> or <span class="text-white">Markdown</span>.</p>
+      <p class="uc-label mt-4 text-emerald-300">What you get</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">The right format in one move — no ad-filled converter, no copy-pasting between apps.</p>
+    </article>
+
+    <!-- 7 · Photographer handoff -->
+    <article data-role="photo" data-form="Photographer"
+             class="use-card uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="camera" class="h-4 w-4"></i></span>
+      <h3 class="mt-4 text-base font-medium tracking-tight">The client can't open your camera files</h3>
+      <p class="uc-label mt-4 text-rose-300">The annoyance</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">You shot RAW or exported TIFF. The client double-clicks and gets "can't open this file". Re-exporting everything means firing up your heavy editing software again.</p>
+      <p class="uc-label mt-4 text-indigo-300">The fix</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">Drop the folder → <span class="uc-key">⇧ Shift</span> → <span class="text-white">JPG</span>. Add <span class="text-white">Privacy Cleaner</span> so your camera's serial number and the venue's location stay behind.</p>
+      <p class="uc-label mt-4 text-emerald-300">What you get</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-zinc-300">A gallery anyone can open, delivered the same evening.</p>
+    </article>
+
+    <!-- 8 · CTA tile -->
+    <a href="#feedback" onclick="trackEvent('usecase_suggest_click')"
+       class="uc-card flex flex-col justify-between rounded-2xl border border-dashed border-white/15 p-6 hover:border-white/35">
+      <div>
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
+        <h3 class="mt-4 text-base font-medium tracking-tight">Your file chore isn't here?</h3>
+        <p class="mt-2 text-sm leading-relaxed text-zinc-300">Tell us the boring thing you do every week. The most-requested ones become presets in the next version.</p>
+      </div>
+      <span class="mt-6 inline-flex items-center gap-1.5 text-sm text-white">Suggest a use case <i data-lucide="arrow-right" class="h-4 w-4"></i></span>
+    </a>
+  </div>
+
+  <!-- Closing CTA -->
+  <div class="mt-8 flex flex-col items-start gap-4 rounded-2xl border border-white/10 bg-card glass px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-sm text-zinc-300">Free for Windows 10 &amp; 11 · works offline · nothing is uploaded</p>
+    <a href="#download" onclick="trackEvent('mvp_download_click', { placement: 'use_cases' })"
+       class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+      <i data-lucide="download" class="h-4 w-4"></i>Get KhartTool free
+    </a>
+  </div>
+</section>
+
+      <section id="presets" class="mx-auto max-w-6xl px-6 pb-20">
+        <style>
+          .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+          .chain-step {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+            background: #27272a; border: 1px solid rgba(255,255,255,.12); font-size: 11.5px; color: #f4f4f5; white-space: nowrap;
+          }
+          .chain-step.first { border-color: rgba(165,180,252,.5); background: rgba(129,140,248,.14); color: #e0e7ff; }
+          .chain-step.last { border-color: rgba(110,231,183,.45); background: rgba(52,211,153,.12); color: #d1fae5; }
+          .chain-arrow { color: #71717a; font-size: 12px; }
+        </style>
+
+        <p class="text-xs uppercase tracking-[0.22em] text-zinc-400">Presets &amp; pipelines</p>
+        <h2 class="mt-3 text-2xl font-medium tracking-tight sm:text-3xl">One drop, several steps, every file.</h2>
+        <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">
+          A preset is a saved recipe. Pick it once from the menu on the KhartTool bar, then drop one file or a whole folder:
+          every file goes through every step, in order, and the results land next to the originals.
+          Version 0.1.0 includes two ready-made presets.
+        </p>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <article class="uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium tracking-tight">Web Optimizer</h3>
+              <span class="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200">Available now</span>
+            </div>
+            <div class="chain mt-4" aria-label="Steps: resize to 1920 pixels, remove hidden data, save as WebP">
+              <span class="chain-step first">Resize to 1920 px</span><span class="chain-arrow">→</span>
+              <span class="chain-step">Remove hidden data</span><span class="chain-arrow">→</span>
+              <span class="chain-step last">Save as WebP</span>
+            </div>
+            <p class="uc-label mt-5 text-indigo-300">Great for</p>
+            <ul class="mt-2 space-y-2 text-sm leading-relaxed text-zinc-300">
+              <li><span class="text-white">Online shops:</span> turn a supplier's 15 MB product shots into light, fast-loading images in one drop.</li>
+              <li><span class="text-white">Blogs and portfolios:</span> stay under upload limits without opening an image editor.</li>
+              <li><span class="text-white">Sharing a big batch:</span> shrink 300 holiday photos before putting them in a shared drive.</li>
+            </ul>
           </article>
-          <article data-role="photo" data-form="Photographer" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">RAW</span>
-            <h3 class="mt-3 text-sm font-medium">Commercial &amp; event photographers</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">Two thousand CR2 or ARW frames, and a client gallery that must not include the venue’s GPS pin.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Shift-drag a RAW file onto JPG, PNG, WEBP, or TIFF. Optional rawpy does the decode. Privacy Cleaner copies pixels into a clean file so GPS and camera serial stay behind. It is a wheel action, not a global hotkey.</p>
+
+          <article class="uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium tracking-tight">Privacy Cleaner</h3>
+              <span class="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200">Available now</span>
+            </div>
+            <div class="chain mt-4" aria-label="Steps: remove location and camera data, keep the same format">
+              <span class="chain-step first">Remove location &amp; camera data</span><span class="chain-arrow">→</span>
+              <span class="chain-step last">Keep the same format</span>
+            </div>
+            <p class="uc-label mt-5 text-indigo-300">Great for</p>
+            <ul class="mt-2 space-y-2 text-sm leading-relaxed text-zinc-300">
+              <li><span class="text-white">Marketplace listings:</span> sell the couch without publishing where it sits.</li>
+              <li><span class="text-white">Family photos:</span> share kids' pictures in group chats without the home GPS pin.</li>
+              <li><span class="text-white">Client work:</span> deliver a gallery without your camera's serial number inside every file.</li>
+            </ul>
           </article>
-          <article data-role="shop" data-form="E-commerce" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Storefront</span>
-            <h3 class="mt-3 text-sm font-medium">E-commerce &amp; Shopify</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">A supplier dropped 15&nbsp;MB TIFFs into the product folder. The store feels it on every page.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Web Optimizer resizes the long side to 1,920, strips EXIF, and writes WebP at quality 92. AVIF output and a fixed margin pass are not in 0.1.0 — ask for that preset below.</p>
+        </div>
+
+        <div class="mt-4 rounded-3xl border border-indigo-300/25 bg-card glass p-6 sm:p-8 shadow-[0_0_80px_-30px_rgba(129,140,248,0.5)]">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="rounded-full bg-indigo-300 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-950">Coming in v0.2</span>
+            <h3 class="text-lg font-medium tracking-tight">Build your own pipeline</h3>
+          </div>
+          <p class="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-300">
+            Soon you'll be able to chain any of KhartTool's actions into your own sequence: pick the steps, put them in order, give it a name.
+            Then drop dozens or hundreds of files at once and walk away. The chore you repeat every week becomes one drag.
+          </p>
+          <p class="uc-label mt-6 text-zinc-400">Pipelines people could build</p>
+          <div class="mt-3 grid gap-3 md:grid-cols-2">
+            <div class="rounded-2xl border border-white/10 bg-canvas p-4">
+              <p class="text-sm font-medium">Photographer's client gallery</p>
+              <div class="chain mt-3"><span class="chain-step first">RAW → JPG</span><span class="chain-arrow">→</span><span class="chain-step">Resize</span><span class="chain-arrow">→</span><span class="chain-step">Remove hidden data</span><span class="chain-arrow">→</span><span class="chain-step last">Pack as ZIP</span></div>
+              <p class="mt-3 text-xs text-zinc-400">From a shoot folder to a ready-to-send gallery in one drop.</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-canvas p-4">
+              <p class="text-sm font-medium">Scan it, send it</p>
+              <div class="chain mt-3"><span class="chain-step first">Photos → one PDF</span><span class="chain-arrow">→</span><span class="chain-step">Compress PDF</span><span class="chain-arrow">→</span><span class="chain-step last">Remove PDF metadata</span></div>
+              <p class="mt-3 text-xs text-zinc-400">Phone photos of a contract become one small, clean PDF.</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-canvas p-4">
+              <p class="text-sm font-medium">Social clip</p>
+              <div class="chain mt-3"><span class="chain-step first">Trim</span><span class="chain-arrow">→</span><span class="chain-step">Crop to vertical</span><span class="chain-arrow">→</span><span class="chain-step">Compress</span><span class="chain-arrow">→</span><span class="chain-step last">MP4 or GIF</span></div>
+              <p class="mt-3 text-xs text-zinc-400">Every recording comes out ready for Reels, Shorts or a chat.</p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-canvas p-4">
+              <p class="text-sm font-medium">Voice notes and podcasts</p>
+              <div class="chain mt-3"><span class="chain-step first">Trim</span><span class="chain-arrow">→</span><span class="chain-step">Even out volume</span><span class="chain-arrow">→</span><span class="chain-step last">Save as MP3</span></div>
+              <p class="mt-3 text-xs text-zinc-400">A folder of uneven recordings becomes a tidy, same-volume set.</p>
+            </div>
+          </div>
+          <p class="mt-4 text-[11px] text-zinc-400">These are ideas for v0.2, not features of 0.1.0. The steps and their order may change based on your feedback.</p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button type="button" id="pipeline-idea" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+              <i data-lucide="workflow" class="h-4 w-4"></i>Suggest the pipeline you'd build first
+            </button>
+            <span class="text-xs text-zinc-400">The most-requested ones ship first.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="roadmap" class="mx-auto max-w-6xl px-6 pb-20">
+        <style>
+          .wheel-toggle {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px;
+            font-size: 12px; border: 1px solid rgba(255,255,255,.14); background: #18181b; color: #a1a1aa;
+            transition: background .15s ease, border-color .15s ease, color .15s ease;
+          }
+          .wheel-toggle::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: #52525b; }
+          .wheel-toggle[aria-pressed="true"] { background: rgba(129,140,248,.18); border-color: rgba(165,180,252,.7); color: #eef2ff; }
+          .wheel-toggle[aria-pressed="true"]::before { background: #a5b4fc; box-shadow: 0 0 8px rgba(165,180,252,.9); }
+          .wheel-toggle.ctrl[aria-pressed="true"] { background: rgba(52,211,153,.14); border-color: rgba(110,231,183,.6); color: #ecfdf5; }
+          .wheel-toggle.ctrl[aria-pressed="true"]::before { background: #6ee7b7; box-shadow: 0 0 8px rgba(110,231,183,.9); }
+        </style>
+
+        <p class="text-xs uppercase tracking-[0.22em] text-zinc-400">Coming next</p>
+        <h2 class="mt-3 text-2xl font-medium tracking-tight sm:text-3xl">Version 0.1.0 is just the start.</h2>
+        <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">
+          The next version is about making KhartTool fit <span class="text-white">your</span> files and <span class="text-white">your</span> habits.
+          Here is what we are building, and your feedback decides the order.
+        </p>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-3">
+          <article class="uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="layers" class="h-4 w-4"></i></span>
+            <h3 class="mt-4 text-base font-medium tracking-tight">Many more formats</h3>
+            <p class="mt-2 text-sm leading-relaxed text-zinc-300">The goal: nearly every file type you work with. More image, RAW, video, audio and document formats, plus more tools for each, all still offline.</p>
           </article>
-          <article data-role="legal" data-form="Legal / Healthcare / Finance" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Confidential</span>
-            <h3 class="mt-3 text-sm font-medium">Legal, healthcare &amp; finance</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">A contract or record still carries an author name, a revision trail, or a GPS tag, and it cannot go to a conversion site.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">The file stays on the PC. Strip image or PDF metadata, merge or compress PDFs, convert DOCX locally. This build does not flatten form fields, lock a PDF read-only, or certify HIPAA or GDPR. It also does not upload.</p>
+          <article class="uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="workflow" class="h-4 w-4"></i></span>
+            <h3 class="mt-4 text-base font-medium tracking-tight">Your own presets</h3>
+            <p class="mt-2 text-sm leading-relaxed text-zinc-300">Chain any actions into a named preset and run it on many files at once. <a href="#presets" class="text-indigo-300 hover:underline">See pipeline ideas</a>.</p>
           </article>
-          <article data-role="creator" data-form="Video / Creator" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Social</span>
-            <h3 class="mt-3 text-sm font-medium">Motion, YouTube &amp; SMM</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">You need a looping GIF for a newsletter, or the audio from a clip, without a watermarked website.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Shift-drag to GIF, WebM, MP4, or Extract MP3. Ctrl opens trim, crop, speed, and mute through FFmpeg. A 15-second 9:16 60&nbsp;fps GIF batch is the social preset above, not a one-flick export in this build.</p>
+          <article class="uc-card rounded-2xl border border-white/10 bg-card glass p-6">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-400/10 text-indigo-200"><i data-lucide="settings-2" class="h-4 w-4"></i></span>
+            <h3 class="mt-4 text-base font-medium tracking-tight">A wheel set up your way</h3>
+            <p class="mt-2 text-sm leading-relaxed text-zinc-300">Choose which formats appear when you hold Shift and which commands appear when you hold Ctrl. Only what you actually use, one flick away.</p>
           </article>
-          <article data-role="design" data-form="UI / Frontend" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Design</span>
-            <h3 class="mt-3 text-sm font-medium">UI, UX &amp; frontend</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">A Figma export folder is full of heavy PNGs and color profiles you do not want in the repo.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Drop the folder. Convert PNG to WebP, resize, strip profiles. KhartTool does not optimize SVG paths in 0.1.0 — that belongs on the feedback form, not in the download.</p>
-          </article>
-          <article data-role="writer" data-form="Writer / Educator" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Docs</span>
-            <h3 class="mt-3 text-sm font-medium">Writers, academics &amp; educators</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">Lecture notes are in Markdown. A table is a CSV. You do not want Word, and you do not want an ad page.</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">Shift-drag between PDF, DOCX, TXT, JSON, CSV, and Markdown. DOCX to PDF uses Word when it is installed, otherwise a ReportLab approximation. JSON and CSV convert both ways.</p>
-          </article>
-          <article data-role="privacy" data-form="Privacy / Power user" class="use-card rounded-2xl border border-white/10 bg-card p-5 hover:border-white/30">
-            <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">Local</span>
-            <h3 class="mt-3 text-sm font-medium">Privacy purists &amp; power users</h3>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-500">Another tab, another 25&nbsp;MB cap, another site that keeps the file “for processing.”</p>
-            <p class="mt-2 text-xs leading-relaxed text-zinc-300">The pill is already on the desktop. Shift converts, Ctrl opens tools, Esc closes the wheel. There is no global hotkey. The app sends nothing unless you start license activation yourself.</p>
-          </article>
+        </div>
+
+        <div class="mt-4 rounded-3xl border border-indigo-300/25 bg-card glass p-6 sm:p-8 shadow-[0_0_80px_-30px_rgba(129,140,248,0.5)]">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="rounded-full bg-indigo-300 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-950">Preview</span>
+              <h3 class="text-lg font-medium tracking-tight">Customise your wheels</h3>
+            </div>
+            <span class="text-xs text-zinc-400">Try it: click to switch items on or off</span>
+          </div>
+          <p class="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">A sketch of the planned settings. A photographer might keep only JPG, TIFF and WebP on Shift, and Metadata, Resize and ZIP on Ctrl.</p>
+          <div class="mt-6 grid gap-6 md:grid-cols-2">
+            <div>
+              <p class="text-sm font-medium"><span class="uc-key">⇧ Shift</span> <span class="ml-1">format wheel</span> · <span id="shift-count" class="text-indigo-300"></span></p>
+              <div class="mt-3 flex flex-wrap gap-2" data-wheel="shift">
+                <button type="button" class="wheel-toggle" aria-pressed="true">JPG</button>
+                <button type="button" class="wheel-toggle" aria-pressed="false">PNG</button>
+                <button type="button" class="wheel-toggle" aria-pressed="true">WebP</button>
+                <button type="button" class="wheel-toggle" aria-pressed="true">TIFF</button>
+                <button type="button" class="wheel-toggle" aria-pressed="false">PDF</button>
+                <button type="button" class="wheel-toggle" aria-pressed="false">AVIF</button>
+                <button type="button" class="wheel-toggle" aria-pressed="false">HEIC</button>
+                <button type="button" class="wheel-toggle" aria-pressed="false">GIF</button>
+              </div>
+            </div>
+            <div>
+              <p class="text-sm font-medium"><span class="uc-key">Ctrl</span> <span class="ml-1">tool wheel</span> · <span id="ctrl-count" class="text-emerald-300"></span></p>
+              <div class="mt-3 flex flex-wrap gap-2" data-wheel="ctrl">
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="true">Metadata</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="true">Resize</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="true">ZIP</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="false">Compress</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="false">Crop</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="false">Rotate</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="false">Blur</button>
+                <button type="button" class="wheel-toggle ctrl" aria-pressed="false">Redact</button>
+              </div>
+            </div>
+          </div>
+          <p class="mt-5 text-[11px] text-zinc-400">Planned for the next version, not in 0.1.0. Names and layout may change.</p>
+          <div class="mt-5 flex flex-wrap items-center gap-3">
+            <a href="#feedback" onclick="trackEvent('roadmap_feedback_click')" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+              <i data-lucide="message-square-plus" class="h-4 w-4"></i>Tell us which formats you need
+            </a>
+          </div>
         </div>
       </section>
 
       <section id="download" class="mx-auto max-w-6xl px-6 pb-20">
-        <div class="rounded-3xl border border-white/10 bg-card p-8 sm:p-10">
-          <p class="text-xs uppercase tracking-[0.22em] text-zinc-500">MVP distribution</p>
-          <h2 class="mt-3 text-3xl font-medium tracking-tight">Install the build. Keep the files.</h2>
-          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">Latest release: <span class="text-zinc-200">KhartTool-0.1.0-win64-setup.exe</span> and <span class="text-zinc-200">KhartTool-0.1.0-win64-portable.zip</span>. SmartScreen may call an unsigned build unrecognized. Use More info, then Run anyway. Do not disable Defender. Video tools need the FFmpeg binary shipped in that zip.</p>
-          <div class="mt-6 flex flex-wrap items-center gap-3">
-            <a href="https://github.com/AKhart1/KhartTool/releases/latest" onclick="trackEvent('mvp_download_click', { placement: 'download_block' })" class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
-              <i data-lucide="download" class="h-4 w-4"></i>
-              Download KhartTool MVP (v0.1.0-alpha)
-            </a>
-            <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Windows 10/11</span>
-            <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Portable exe</span>
-            <span class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Zero telemetry</span>
+        <div class="rounded-3xl border border-white/10 bg-card glass p-8 sm:p-10">
+          <p class="text-xs uppercase tracking-[0.22em] text-zinc-400">Free download</p>
+          <h2 class="mt-3 text-3xl font-medium tracking-tight">Get KhartTool for Windows</h2>
+          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">Free, works offline, no account. Most people should pick the installer. Choose portable to run it from a folder or a USB stick without installing.</p>
+
+          <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-indigo-300/40 bg-canvas p-5 shadow-[0_0_60px_-20px_rgba(129,140,248,0.45)]">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base font-medium">Installer</h3>
+                <span class="rounded-full bg-indigo-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-950">Recommended</span>
+              </div>
+              <p class="mt-2 text-sm leading-relaxed text-zinc-300">Adds a Start-menu shortcut and a normal uninstaller (Settings → Apps).</p>
+              <a data-dl="setup" href="https://github.com/AKhart1/KhartTool/releases/latest" class="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-zinc-950 hover:bg-zinc-200">
+                <i data-lucide="download" class="h-4 w-4"></i>Download installer (.exe)
+              </a>
+              <p class="mt-3 text-[11px] text-zinc-400"><span data-file="setup">KhartTool setup</span><span data-size="setup"></span></p>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-canvas p-5">
+              <h3 class="text-base font-medium">Portable</h3>
+              <p class="mt-2 text-sm leading-relaxed text-zinc-300">Unzip anywhere and run it. Nothing is installed — delete the folder to remove it. FFmpeg for the video tools is included in the zip.</p>
+              <a data-dl="portable" href="https://github.com/AKhart1/KhartTool/releases/latest" class="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm text-zinc-100 hover:border-white/40">
+                <i data-lucide="folder-archive" class="h-4 w-4"></i>Download portable (.zip)
+              </a>
+              <p class="mt-3 text-[11px] text-zinc-400"><span data-file="portable">KhartTool portable</span><span data-size="portable"></span></p>
+            </div>
           </div>
+          <p class="mt-4 text-xs text-zinc-400">Needs Windows 10 or 11 (64-bit) · <span id="version-line">Version 0.1.0</span> · <a href="https://github.com/AKhart1/KhartTool/releases" class="text-zinc-300 underline-offset-2 hover:underline" target="_blank" rel="noopener">All releases and notes</a></p>
+        </div>
+
+        <div class="mt-4 grid gap-4 lg:grid-cols-3">
+          <div class="rounded-2xl border border-white/10 bg-card glass p-6 lg:col-span-2">
+            <h3 class="text-base font-medium">Up and running in 3 steps</h3>
+            <ol class="mt-4 grid gap-4 sm:grid-cols-3">
+              <li>
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-indigo-300/30 bg-indigo-400/15 text-xs font-semibold text-indigo-200">1</span>
+                <p class="mt-2 text-sm font-medium">Download</p>
+                <p class="mt-1 text-xs leading-relaxed text-zinc-300">Pick the installer or the portable zip above.</p>
+              </li>
+              <li>
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-indigo-300/30 bg-indigo-400/15 text-xs font-semibold text-indigo-200">2</span>
+                <p class="mt-2 text-sm font-medium">If Windows warns you</p>
+                <p class="mt-1 text-xs leading-relaxed text-zinc-300">KhartTool isn't code-signed yet, so SmartScreen may say "Windows protected your PC". Click <span class="uc-key">More info</span>, then <span class="uc-key">Run anyway</span>. No need to turn off Defender.</p>
+              </li>
+              <li>
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-indigo-300/30 bg-indigo-400/15 text-xs font-semibold text-indigo-200">3</span>
+                <p class="mt-2 text-sm font-medium">Drag your first file</p>
+                <p class="mt-1 text-xs leading-relaxed text-zinc-300">Drop any photo, video or document on the KhartTool bar and hold <span class="uc-key">⇧ Shift</span>. The new file appears next to the original.</p>
+              </li>
+            </ol>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-card glass p-6">
+            <h3 class="text-base font-medium">What it can touch</h3>
+            <ul class="mt-4 space-y-2.5 text-xs leading-relaxed text-zinc-300">
+              <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400"></i>Only the files you drag onto it.</li>
+              <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400"></i>It saves a new file next to the original.</li>
+              <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400"></i>Works fully offline. The only network request is licence activation, and only if you start it.</li>
+              <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400"></i>No global hotkey — it only reacts when you drag something onto it.</li>
+              <li class="flex gap-2"><i data-lucide="x" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400"></i>No ads and no uploads — your files never leave your PC.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="verify" class="mt-4 hidden rounded-2xl border border-white/10 bg-card glass p-6">
+          <h3 class="text-base font-medium">Check your download</h3>
+          <p class="mt-1 text-xs text-zinc-300">Optional. In PowerShell, run <code class="rounded bg-canvas px-1.5 py-0.5 text-zinc-200">Get-FileHash .\FILE-NAME</code> and compare the result with the code below.</p>
+          <div id="verify-rows" class="mt-4 space-y-3"></div>
         </div>
       </section>
 
       <section id="feedback" class="mx-auto max-w-6xl px-6 pb-24">
-        <div class="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+        <div class="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <h2 class="text-2xl font-medium tracking-tight">What should v0.2 learn?</h2>
-            <p class="mt-3 text-sm leading-relaxed text-zinc-400">Posts to Web3Forms. To use Formspree, set the form action to <span class="text-zinc-300">https://formspree.io/f/YOUR_ACCESS_KEY_HERE</span> and remove the access_key field.</p>
+            <h2 class="text-2xl font-medium tracking-tight">Tried it? Tell us how it went.</h2>
+            <p class="mt-3 text-sm leading-relaxed text-zinc-300">It takes 20 seconds. Every message is read by the developer, and anyone whose idea ships gets credited in the release notes.</p>
+
+            <div class="mt-6 rounded-2xl border border-white/10 bg-card glass p-5">
+              <p class="text-sm font-medium">What would you use KhartTool for?</p>
+              <p class="mt-1 text-xs text-zinc-400">Pick all that apply. No typing.</p>
+              <div class="mt-3 flex flex-wrap gap-2" id="poll">
+                <button type="button" data-vote="privacy" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Removing hidden photo data</button>
+                <button type="button" data-vote="shrink" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Making files smaller</button>
+                <button type="button" data-vote="convert" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Changing file formats</button>
+                <button type="button" data-vote="media" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Video and audio</button>
+                <button type="button" data-vote="presets" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Presets: one drop, many files</button>
+                <button type="button" data-vote="pipelines" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Automating repeat chores</button>
+                <button type="button" data-vote="web" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Images for a website or shop</button>
+                <button type="button" data-vote="pdf" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Scans and PDFs</button>
+                <button type="button" data-vote="zip" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Packing files into ZIP</button>
+                <button type="button" data-vote="redact" class="poll-btn rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:border-white/40" aria-pressed="false">Blurring screenshots before sharing</button>
+              </div>
+              <p id="poll-note" class="mt-3 hidden text-xs text-emerald-300">Thanks — noted. Pick more if you like.</p>
+            </div>
+
+            <div class="mt-4 rounded-2xl border border-white/10 bg-card glass p-5">
+              <p class="text-sm font-medium">Coming next (v0.2)</p>
+              <p class="mt-1 text-xs text-zinc-400">Not in 0.1.0 yet. Tell us what you need most, and it moves up the list.</p>
+              <ul class="mt-3 space-y-1.5 text-xs text-zinc-300">
+                <li>· <span class="text-white">Your own presets:</span> chain several actions and run them on many files at once</li>
+                <li>· <span class="text-white">Your own wheels:</span> choose the formats on Shift and the commands on Ctrl</li>
+                <li>· <span class="text-white">Many more formats:</span> the goal is nearly every file type you use, e.g. AVIF and HEIC</li>
+              </ul>
+              <p class="mt-4 text-xs text-zinc-400">Smaller ideas we're weighing</p>
+              <ul class="mt-2 space-y-1.5 text-xs text-zinc-300">
+                <li>· A one-flick social preset (vertical 9:16 clip or GIF)</li>
+                <li>· Dataset clean-up: skip broken files, square crop</li>
+                <li>· SVG optimisation for designers</li>
+                <li>· Flatten PDF forms and lock PDFs as read-only</li>
+              </ul>
+            </div>
+
             <div class="mt-6 flex flex-wrap gap-3">
-              <a id="github-issue" href="https://github.com/AKhart1/KhartTool/issues/new" class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm hover:border-white/30" target="_blank" rel="noopener"><i data-lucide="circle-dot" class="h-4 w-4"></i>Create GitHub Issue</a>
+              <a id="github-issue" href="https://github.com/AKhart1/KhartTool/issues/new" class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm hover:border-white/30" target="_blank" rel="noopener"><i data-lucide="circle-dot" class="h-4 w-4"></i>Report on GitHub</a>
               <a href="https://github.com/AKhart1/KhartTool/discussions" class="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm hover:border-white/30" target="_blank" rel="noopener"><i data-lucide="messages-square" class="h-4 w-4"></i>GitHub Discussions</a>
             </div>
           </div>
-          <form id="feedback-form" class="rounded-2xl border border-white/10 bg-card p-6" action="https://api.web3forms.com/submit" method="POST">
-            <input type="hidden" name="access_key" value="YOUR_ACCESS_KEY_HERE" />
-            <input type="hidden" name="subject" value="KhartTool MVP feedback" />
-            <label class="block text-xs text-zinc-400" for="role">Role</label>
-            <select id="role" name="role" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none focus:border-white/30">
-              <option>AI / ML</option>
-              <option>Photographer</option>
-              <option>E-commerce</option>
-              <option>Legal / Healthcare / Finance</option>
-              <option>Video / Creator</option>
-              <option>UI / Frontend</option>
-              <option>Writer / Educator</option>
-              <option>Privacy / Power user</option>
-            </select>
-            <label class="mt-4 block text-xs text-zinc-400" for="wanted">What formats, tools, or batch presets do you want to see?</label>
-            <textarea id="wanted" name="wanted" rows="3" maxlength="1000" placeholder="e.g., AVIF conversion, automatic watermark removal, PDF OCR, bulk rename..." class="mt-1 w-full resize-y rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-white/30"></textarea>
-            <label class="mt-4 block text-xs text-zinc-400" for="feature">Pipeline or preset request</label>
-            <input id="feature" name="feature_request" type="text" maxlength="240" placeholder="Every morning I need…" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-white/30" />
-            <label class="mt-4 block text-xs text-zinc-400" for="bug">Feedback / bug report</label>
-            <textarea id="bug" name="bug_report" rows="4" maxlength="2000" placeholder="What you dropped, what you expected, what happened." class="mt-1 w-full resize-y rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-600 focus:border-white/30"></textarea>
-            <label class="mt-4 block text-xs text-zinc-400" for="email">Contact email <span class="text-zinc-600">(optional)</span></label>
-            <input id="email" name="email" type="email" autocomplete="email" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none focus:border-white/30" />
-            <button type="submit" class="mt-5 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-200">Send feedback</button>
-            <p id="form-note" class="mt-3 text-xs text-zinc-500">Replace YOUR_ACCESS_KEY_HERE before mail can send. GitHub links work without it.</p>
+
+          <form id="feedback-form" class="rounded-2xl border border-white/10 bg-card glass p-6" action="https://api.web3forms.com/submit" method="POST">
+            <input type="hidden" name="access_key" value="36ea1fe1-bd40-4b6a-9265-b7812d614124" />
+            <input type="hidden" name="subject" value="KhartTool feedback" />
+            <input type="hidden" name="from_name" value="KhartTool site" />
+            <input type="hidden" name="source" id="source" value="website" />
+            <input type="checkbox" name="botcheck" class="hidden" style="display:none" tabindex="-1" autocomplete="off" />
+
+            <fieldset>
+              <legend class="text-xs text-zinc-300">How useful was it? <span class="text-zinc-500">(optional)</span></legend>
+              <div class="mt-2 flex gap-2" id="rating">
+                <label class="cursor-pointer"><input type="radio" name="rating" value="1" class="peer sr-only" /><span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-sm text-zinc-300 peer-checked:border-white peer-checked:bg-white peer-checked:text-zinc-950 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40">1</span></label>
+                <label class="cursor-pointer"><input type="radio" name="rating" value="2" class="peer sr-only" /><span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-sm text-zinc-300 peer-checked:border-white peer-checked:bg-white peer-checked:text-zinc-950 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40">2</span></label>
+                <label class="cursor-pointer"><input type="radio" name="rating" value="3" class="peer sr-only" /><span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-sm text-zinc-300 peer-checked:border-white peer-checked:bg-white peer-checked:text-zinc-950 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40">3</span></label>
+                <label class="cursor-pointer"><input type="radio" name="rating" value="4" class="peer sr-only" /><span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-sm text-zinc-300 peer-checked:border-white peer-checked:bg-white peer-checked:text-zinc-950 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40">4</span></label>
+                <label class="cursor-pointer"><input type="radio" name="rating" value="5" class="peer sr-only" /><span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-sm text-zinc-300 peer-checked:border-white peer-checked:bg-white peer-checked:text-zinc-950 peer-focus-visible:ring-2 peer-focus-visible:ring-white/40">5</span></label>
+              </div>
+            </fieldset>
+
+            <label class="mt-5 block text-xs text-zinc-300" for="bug">What did you try to do, and did it work?</label>
+            <textarea id="bug" name="feedback" rows="4" maxlength="2000" required placeholder="e.g. Dropped 30 phone photos to strip location — worked, but I couldn't find where the new files went." class="mt-1 w-full resize-y rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-500 focus:border-white/30"></textarea>
+
+            <details class="mt-4 group">
+              <summary class="cursor-pointer text-xs text-zinc-300 hover:text-white">Add more detail (optional)</summary>
+              <label class="mt-3 block text-xs text-zinc-300" for="role">What do you mostly work on?</label>
+              <select id="role" name="role" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none focus:border-white/30">
+                <option>Privacy / Power user</option>
+                <option>Photographer</option>
+                <option>E-commerce</option>
+                <option>Legal / Healthcare / Finance</option>
+                <option>Video / Creator</option>
+                <option>UI / Frontend</option>
+                <option>Writer / Educator</option>
+                <option>AI / ML</option>
+                <option>Other</option>
+              </select>
+              <label class="mt-4 block text-xs text-zinc-300" for="wanted">Which formats or tools are missing?</label>
+              <textarea id="wanted" name="wanted" rows="2" maxlength="1000" placeholder="e.g. HEIC to JPG, AVIF, bulk rename…" class="mt-1 w-full resize-y rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-500 focus:border-white/30"></textarea>
+              <label class="mt-4 block text-xs text-zinc-300" for="feature">A pipeline you'd build (steps in order)</label>
+              <input id="feature" name="feature_request" type="text" maxlength="240" placeholder="e.g. Resize → remove hidden data → WebP → ZIP" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none placeholder:text-zinc-500 focus:border-white/30" />
+              <label class="mt-4 block text-xs text-zinc-300" for="email">Email, if you'd like a reply</label>
+              <input id="email" name="email" type="email" autocomplete="email" class="mt-1 w-full rounded-lg border border-white/10 bg-canvas px-3 py-2 text-sm outline-none focus:border-white/30" />
+            </details>
+
+            <button type="submit" id="feedback-submit" class="mt-5 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-950 hover:bg-zinc-200">Send feedback</button>
+            <p id="form-note" class="mt-3 text-xs text-zinc-400" aria-live="polite">No account needed. Email is optional.</p>
           </form>
         </div>
       </section>
     </main>
-    <footer class="border-t border-white/10 px-6 py-8 text-center text-xs text-zinc-500">KhartTool 0.1.0 · KhartDev · Free Edition. The desktop app does not phone home. This page does not either, until you paste an analytics key.</footer>
+    <footer class="border-t border-white/10 px-6 py-8 text-center text-xs text-zinc-400">KhartTool 0.1.0 · KhartDev · Free Edition<br /><span class="text-zinc-500">The desktop app sends no data. This page sets no cookies and shows no ads.</span></footer>
   </div>
 
   <script>
@@ -370,6 +778,9 @@
       console.log("[Analytics Event]: " + eventName, params);
       if (window.gtag) gtag("event", eventName, params);
       if (window.posthog) posthog.capture(eventName, params);
+      if (window.goatcounter && window.goatcounter.count) {
+        window.goatcounter.count({ path: eventName + (params.placement ? "-" + params.placement : ""), title: eventName, event: true });
+      }
     }
 
     var MIN_SLICE_DEG = 30, INNER_R = 46, OUTER_R = 126, LABEL_R = 88, HOVER_RATE = 16, OPEN_MS = 280;
@@ -398,9 +809,9 @@
       }
     };
     var PRESET_INFO = {
-      quick: { label: "Quick wheel", status: "Context wheel. Slice width comes from weights_for()." },
-      web: { label: "Web Optimizer", status: "Shipped preset: resize 1920, strip metadata, WEBP quality 92.", lock: "WEBP", cat: "image", mode: "shift" },
-      privacy: { label: "Privacy Cleaner", status: "Shipped preset: strip metadata, keep the source format.", lock: "Metadata", cat: "image", mode: "ctrl" }
+      quick: { label: "Quick wheel", status: "Shows the formats that fit your file." },
+      web: { label: "Web Optimizer", status: "Preset: resize to 1920 px, remove hidden data, save as WebP.", lock: "WEBP", cat: "image", mode: "shift" },
+      privacy: { label: "Privacy Cleaner", status: "Preset: remove location and camera data, keep the format.", lock: "Metadata", cat: "image", mode: "ctrl" }
     };
     var explorer = { cat: "image", mode: "shift", preset: "quick" };
 
@@ -636,7 +1047,7 @@
       if (index < 0) return;
       var label = options[index];
       trackEvent("wheel_slice_click", { label: label, cat: explorer.cat, mode: explorer.mode });
-      statusEl.textContent = "Would run " + label;
+      statusEl.textContent = "In the app, this would create the " + label + " file";
     });
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
@@ -719,34 +1130,200 @@
       });
     });
 
+    // ---- Release info: edit these values when you publish a new build ----
+    var RELEASE = {
+      version: "0.1.0",
+      setupFile: "KhartTool-0.1.0-win64-setup.exe",
+      portableFile: "KhartTool-0.1.0-win64-portable.zip",
+      setupSize: "",          // e.g. "48 MB"
+      portableSize: "",       // e.g. "61 MB"
+      setupSha256: "",        // paste output of: Get-FileHash .\KhartTool-0.1.0-win64-setup.exe
+      portableSha256: "",
+      setupVirusTotal: "",    // paste the VirusTotal result URL
+      portableVirusTotal: ""
+    };
+    (function applyRelease() {
+      var base = "https://github.com/AKhart1/KhartTool/releases/latest/download/";
+      document.querySelectorAll("[data-dl]").forEach(function (link) {
+        var kind = link.getAttribute("data-dl");
+        var file = kind === "portable" ? RELEASE.portableFile : RELEASE.setupFile;
+        if (file) link.href = base + file;
+        link.addEventListener("click", function () {
+          trackEvent(kind === "portable" ? "download_portable_click" : "mvp_download_click", { placement: link.getAttribute("data-placement") || "download_block" });
+        });
+      });
+      document.querySelectorAll("[data-file]").forEach(function (el) {
+        var f = el.getAttribute("data-file") === "portable" ? RELEASE.portableFile : RELEASE.setupFile;
+        if (f) el.textContent = f;
+      });
+      document.querySelectorAll("[data-size]").forEach(function (el) {
+        var s = el.getAttribute("data-size") === "portable" ? RELEASE.portableSize : RELEASE.setupSize;
+        if (s) el.textContent = " · " + s;
+      });
+      var versionLine = document.getElementById("version-line");
+      if (versionLine) versionLine.textContent = "Version " + RELEASE.version;
+      var rows = [
+        { name: RELEASE.setupFile, sha: RELEASE.setupSha256, vt: RELEASE.setupVirusTotal },
+        { name: RELEASE.portableFile, sha: RELEASE.portableSha256, vt: RELEASE.portableVirusTotal }
+      ].filter(function (r) { return r.sha || r.vt; });
+      if (!rows.length) return;
+      var box = document.getElementById("verify-rows");
+      rows.forEach(function (r) {
+        var row = document.createElement("div");
+        row.className = "flex flex-col gap-2 rounded-xl border border-white/10 bg-canvas p-3 sm:flex-row sm:items-center sm:justify-between";
+        var left = document.createElement("div");
+        left.className = "min-w-0";
+        var title = document.createElement("p");
+        title.className = "text-xs text-zinc-200";
+        title.textContent = r.name;
+        left.appendChild(title);
+        if (r.sha) {
+          var code = document.createElement("code");
+          code.className = "mt-1 block break-all text-[11px] text-zinc-400";
+          code.textContent = "SHA-256 " + r.sha;
+          left.appendChild(code);
+        }
+        row.appendChild(left);
+        var actions = document.createElement("div");
+        actions.className = "flex shrink-0 gap-2";
+        if (r.sha) {
+          var copy = document.createElement("button");
+          copy.type = "button";
+          copy.className = "rounded-full border border-white/10 px-3 py-1 text-[11px] text-zinc-200 hover:border-white/30";
+          copy.textContent = "Copy hash";
+          copy.addEventListener("click", function () {
+            if (navigator.clipboard) navigator.clipboard.writeText(r.sha).then(function () { copy.textContent = "Copied"; }, function () {});
+            trackEvent("checksum_copy", { file: r.name });
+          });
+          actions.appendChild(copy);
+        }
+        if (r.vt) {
+          var vt = document.createElement("a");
+          vt.href = r.vt;
+          vt.target = "_blank";
+          vt.rel = "noopener";
+          vt.className = "rounded-full border border-white/10 px-3 py-1 text-[11px] text-zinc-200 hover:border-white/30";
+          vt.textContent = "VirusTotal scan";
+          vt.addEventListener("click", function () { trackEvent("virustotal_click", { file: r.name }); });
+          actions.appendChild(vt);
+        }
+        row.appendChild(actions);
+        box.appendChild(row);
+      });
+      document.getElementById("verify").classList.remove("hidden");
+    })();
+
+    // ---- Where the visitor came from (?src=app from the in-app prompt, ?src=reddit, …) ----
+    var visitSource = (new URLSearchParams(location.search).get("src") || "website").slice(0, 40);
+    document.getElementById("source").value = visitSource;
+    if (visitSource !== "website") trackEvent("visit_source", { source: visitSource });
+
+    // ---- "Suggest a pipeline" jumps to the form with the preset field ready ----
+    document.getElementById("pipeline-idea").addEventListener("click", function () {
+      trackEvent("pipeline_idea_click");
+      var details = document.querySelector("#feedback-form details");
+      if (details) details.open = true;
+      var field = document.getElementById("feature");
+      if (!field.value) field.value = "Pipeline: ";
+      document.getElementById("feedback").scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(function () { field.focus(); field.setSelectionRange(field.value.length, field.value.length); }, 500);
+    });
+
+    // ---- Wheel customisation preview ----
+    function updateWheelCounts() {
+      ["shift", "ctrl"].forEach(function (name) {
+        var group = document.querySelector('[data-wheel="' + name + '"]');
+        var out = document.getElementById(name + "-count");
+        if (!group || !out) return;
+        var on = group.querySelectorAll('[aria-pressed="true"]').length;
+        out.textContent = on + " of " + group.children.length + " shown";
+      });
+    }
+    document.querySelectorAll(".wheel-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var on = btn.getAttribute("aria-pressed") !== "true";
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        updateWheelCounts();
+        trackEvent("wheel_custom_toggle", { placement: btn.textContent.trim().toLowerCase() });
+      });
+    });
+    updateWheelCounts();
+
+    // ---- One-click poll ----
+    document.querySelectorAll(".poll-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var on = btn.getAttribute("aria-pressed") !== "true";
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        btn.classList.toggle("bg-indigo-300", on);
+        btn.classList.toggle("text-zinc-950", on);
+        btn.classList.toggle("border-indigo-300", on);
+        btn.classList.toggle("text-zinc-200", !on);
+        document.getElementById("poll-note").classList.remove("hidden");
+        if (on && !btn.dataset.sent) { btn.dataset.sent = "1"; trackEvent("usecase_vote", { placement: btn.getAttribute("data-vote") }); }
+      });
+    });
+
+    // ---- Use Cases scrolled into view (fires once) ----
+    var useCases = document.getElementById("use-cases");
+    if (useCases && "IntersectionObserver" in window) {
+      var seen = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) {
+          trackEvent("scroll-use-cases");
+          seen.disconnect();
+        }
+      }, { threshold: 0.25 });
+      seen.observe(useCases);
+    }
+
+    // ---- Feedback: GitHub issue + Web3Forms ----
+    function feedbackBody() {
+      var rating = document.querySelector("input[name='rating']:checked");
+      return [
+        "## Did it work?", document.getElementById("bug").value || "N/A", "",
+        "## Rating (1-5)", rating ? rating.value : "N/A", "",
+        "## Role", document.getElementById("role").value, "",
+        "## Missing formats or tools", document.getElementById("wanted").value || "N/A", "",
+        "## Preset idea", document.getElementById("feature").value || "N/A", "",
+        "## Source", visitSource
+      ].join("\n");
+    }
+    function issueUrl() {
+      return "https://github.com/AKhart1/KhartTool/issues/new?title=" + encodeURIComponent("Feedback") + "&body=" + encodeURIComponent(feedbackBody());
+    }
     document.getElementById("github-issue").addEventListener("click", function (event) {
-      var body = ["## Role", document.getElementById("role").value, "", "## Wanted", document.getElementById("wanted").value || "N/A", "", "## Pipeline", document.getElementById("feature").value || "N/A", "", "## Feedback", document.getElementById("bug").value || "N/A", "", "KhartTool 0.1.0 / Windows"].join("\n");
-      event.currentTarget.href = "https://github.com/AKhart1/KhartTool/issues/new?title=" + encodeURIComponent("MVP feedback") + "&body=" + encodeURIComponent(body);
+      event.currentTarget.href = issueUrl();
       trackEvent("github_issue_click");
     });
     document.getElementById("feedback-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      var form = event.currentTarget;
+      var note = document.getElementById("form-note");
+      var button = document.getElementById("feedback-submit");
       trackEvent("feedback_submit", { role: document.getElementById("role").value });
-      if (document.querySelector("input[name='access_key']").value === "YOUR_ACCESS_KEY_HERE") {
-        event.preventDefault();
-        document.getElementById("form-note").textContent = "Add a Web3Forms or Formspree key before submitting. The GitHub buttons still work.";
+      if (form.querySelector("input[name='access_key']").value === "36ea1fe1-bd40-4b6a-9265-b7812d614124") {
+        window.open(issueUrl(), "_blank", "noopener");
+        note.textContent = "Opened a pre-filled GitHub issue in a new tab — just press Submit there.";
+        return;
       }
+      button.disabled = true;
+      note.textContent = "Sending…";
+      fetch(form.action, { method: "POST", headers: { Accept: "application/json" }, body: new FormData(form) })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (!data.success) throw new Error(data.message || "failed");
+          form.reset();
+          note.textContent = "Thanks — it went straight to the developer.";
+          trackEvent("feedback_sent");
+        })
+        .catch(function () {
+          note.textContent = "Couldn't send right now. Please use the GitHub button instead.";
+        })
+        .then(function () { button.disabled = false; });
     });
 
     var flowCanvas = document.getElementById("flow");
     var fctx = flowCanvas.getContext("2d");
     var flowW = 880, flowH = 460, flowToken = 0, flowT = 0, flowName = null;
-    var FLOWS = {
-      shift: {
-        file: "brief.docx", out: "brief.pdf", key: "⇧ Shift",
-        options: CATS.doc.shift, target: "PDF",
-        caption: "Shift-drag opens the format wheel on the cursor. Releasing on PDF writes beside the source. Nothing is uploaded."
-      },
-      ctrl: {
-        file: "photo.jpg", out: "photo.jpg", key: "⌃ Ctrl",
-        options: CATS.image.ctrl, target: "Metadata",
-        caption: "Ctrl-drag opens tools. Metadata, or the Privacy Cleaner preset, strips EXIF and GPS on this PC."
-      }
-    };
     function fitFlow() {
       var dpr = Math.min(window.devicePixelRatio || 1, 2);
       var width = flowCanvas.clientWidth || flowW;
@@ -877,59 +1454,265 @@
         fctx.restore();
       }
     }
+    var FLOWS = {
+      shift: {
+        file: "brief.docx", out: "brief.pdf", key: "⇧ Shift", ms: 4200,
+        options: CATS.doc.shift, target: "PDF",
+        caption: "Hold Shift while dragging: the format wheel opens. Release on PDF and the new file is saved next to the original. Nothing is uploaded."
+      },
+      ctrl: {
+        files: ["beach-1.jpg", "beach-2.jpg", "beach-3.jpg"], out: "beach-photos.zip", key: "⌃ Ctrl", ms: 5600,
+        options: CATS.image.ctrl, target: "ZIP",
+        caption: "Select three photos, hold Ctrl while dragging and release on ZIP: one beach-photos.zip appears right next to them."
+      },
+      preset: {
+        kind: "preset", folder: "Holiday photos", count: 10, key: "Preset · no key", ms: 7200,
+        steps: ["Resize 1920 px", "Strip metadata", "Convert to WebP"],
+        caption: "Pick the Web Optimizer preset on the bar, then drop a whole folder: all 10 JPGs are resized, cleaned of hidden data and saved as WebP. No key to hold."
+      }
+    };
+    function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+    function seg(t, a, b) { return clamp01((t - a) / (b - a)); }
+    function fileChip(g, x, y, text, opts) {
+      opts = opts || {};
+      g.save();
+      g.font = "12px Inter, Segoe UI, sans-serif";
+      var pad = opts.folder ? 34 : 11;
+      var w = Math.max(opts.minW || 92, g.measureText(text).width + pad + 12);
+      g.fillStyle = opts.sel ? "rgba(129,140,248,0.2)" : "#18181b";
+      g.strokeStyle = opts.sel ? "rgba(165,180,252,0.95)" : "rgba(255,255,255,0.22)";
+      g.lineWidth = opts.sel ? 1.5 : 1;
+      g.beginPath();
+      g.roundRect(x, y, w, 28, 14);
+      g.fill(); g.stroke();
+      if (opts.folder) {
+        g.fillStyle = "#fcd34d";
+        g.beginPath();
+        g.moveTo(x + 11, y + 9); g.lineTo(x + 16, y + 9); g.lineTo(x + 18, y + 11); g.lineTo(x + 26, y + 11);
+        g.lineTo(x + 26, y + 20); g.lineTo(x + 11, y + 20); g.closePath();
+        g.fill();
+      }
+      g.fillStyle = "#fff";
+      g.textAlign = "left";
+      g.textBaseline = "middle";
+      g.fillText(text, x + pad, y + 14);
+      g.restore();
+      return w;
+    }
+    function stackGhost(g, x, y, label, count) {
+      g.save();
+      g.translate(x + 16, y + 20);
+      g.font = "12px Inter, Segoe UI, sans-serif";
+      var w = Math.max(108, g.measureText(label).width + 36);
+      for (var k = 2; k >= 1; k--) {
+        g.fillStyle = "rgba(39,39,42,0.9)";
+        g.strokeStyle = "rgba(255,255,255,0.18)";
+        g.beginPath(); g.roundRect(k * 4, -k * 4, w, 28, 8); g.fill(); g.stroke();
+      }
+      g.shadowColor = "rgba(0,0,0,0.45)"; g.shadowBlur = 8; g.shadowOffsetY = 3;
+      g.fillStyle = "rgba(24,24,27,0.96)";
+      g.strokeStyle = "rgba(165,180,252,0.6)";
+      g.beginPath(); g.roundRect(0, 0, w, 28, 8); g.fill();
+      g.shadowColor = "transparent"; g.stroke();
+      g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "middle";
+      g.fillText(label, 12, 14);
+      g.fillStyle = "#a5b4fc";
+      g.beginPath(); g.arc(w + 4, -2, 10, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#09090b"; g.font = "600 11px Inter, Segoe UI, sans-serif"; g.textAlign = "center";
+      g.fillText(String(count), w + 4, -1.5);
+      g.restore();
+    }
+    function resultChip(g, x, y, text, pulse) {
+      g.save();
+      g.globalAlpha = pulse;
+      var w = fileChip(g, x, y, text);
+      g.globalAlpha = 1 - pulse;
+      g.strokeStyle = "#34d399";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.roundRect(x - 6 - pulse * 8, y - 6 - pulse * 6, w + 12 + pulse * 16, 40 + pulse * 12, 12);
+      g.stroke();
+      g.globalAlpha = pulse;
+      g.fillStyle = "#34d399";
+      g.font = "11px Inter, Segoe UI, sans-serif";
+      g.textAlign = "left";
+      g.textBaseline = "alphabetic";
+      g.fillText("saved next to the originals", x, y + 46);
+      g.restore();
+    }
     function drawFlow(t, spec) {
+      if (spec.kind === "preset") return drawPresetFlow(t, spec);
       fctx.clearRect(0, 0, flowW, flowH);
       fctx.fillStyle = "#0c0c0f";
       fctx.fillRect(0, 0, flowW, flowH);
-      var src = { x: 72, y: 196 };
-      chip(fctx, src.x, src.y, spec.file);
-      var approach = Math.min(1, Math.max(0, t / 0.16));
-      var grabbed = t >= 0.16 && t < 0.82;
-      var carry = Math.min(1, Math.max(0, (t - 0.22) / 0.18));
+      var files = spec.files || [spec.file];
+      var multi = files.length > 1;
+      var gap = 40;
+      var pre = multi ? 0.26 : 0;
+      var u = multi ? clamp01((t - pre) / (1 - pre)) : t;
+      var src = { x: 72, y: multi ? 150 : 196 };
+      var start = { x: 640, y: 390 };
+      var px, py;
+      var box = { x0: src.x - 18, y0: src.y - 16, x1: src.x + 150, y1: src.y + gap * (files.length - 1) + 42 };
+      var marquee = multi ? seg(t, 0.08, 0.22) : 1;
+      if (multi && t < pre) {
+        var reach = seg(t, 0, 0.08);
+        px = start.x + (box.x0 - start.x) * outCubic(reach);
+        py = start.y + (box.y0 - start.y) * outCubic(reach);
+        if (marquee > 0) {
+          px = box.x0 + (box.x1 - box.x0) * outCubic(marquee);
+          py = box.y0 + (box.y1 - box.y0) * outCubic(marquee);
+          fctx.save();
+          fctx.fillStyle = "rgba(129,140,248,0.10)";
+          fctx.strokeStyle = "rgba(165,180,252,0.85)";
+          fctx.setLineDash([5, 4]);
+          fctx.beginPath();
+          fctx.rect(box.x0, box.y0, px - box.x0, py - box.y0);
+          fctx.fill(); fctx.stroke();
+          fctx.restore();
+        }
+      }
+      for (var i = 0; i < files.length; i++) {
+        var chipY = src.y + i * gap;
+        var selected = multi && (t >= pre || (marquee > 0 && py > chipY + 14));
+        fileChip(fctx, src.x, chipY, files[i], { sel: selected });
+      }
+      var grabbed = u >= 0.16 && u < 0.82;
+      var approach = seg(u, 0, 0.16);
+      var carry = seg(u, 0.22, 0.4);
       var hub = { x: 520, y: 230 };
-      var fileTip = { x: src.x + 18, y: src.y + 8 };
-      var px = 640 + (fileTip.x - 640) * outCubic(approach);
-      var py = 390 + (fileTip.y - 390) * outCubic(approach);
-      if (carry > 0 && t < 0.62) {
+      var fileTip = { x: src.x + 18, y: src.y + 8 + (multi ? gap : 0) };
+      var from = multi ? { x: box.x1, y: box.y1 } : start;
+      if (!multi || t >= pre) {
+        px = from.x + (fileTip.x - from.x) * outCubic(approach);
+        py = from.y + (fileTip.y - from.y) * outCubic(approach);
+      }
+      if (carry > 0 && u < 0.62) {
         px = fileTip.x + (hub.x - fileTip.x) * outCubic(carry);
         py = fileTip.y + (hub.y - fileTip.y) * outCubic(carry);
       }
-      var bloom = Math.min(1, Math.max(0, (t - 0.4) / 0.14));
+      var bloom = seg(u, 0.4, 0.54);
       var wts = weightsFor(spec.options);
       var target = Math.max(0, spec.options.indexOf(spec.target));
-      var flick = Math.min(1, Math.max(0, (t - 0.58) / 0.16));
+      var flick = seg(u, 0.58, 0.74);
       var aim = pointOnCircle(hub.x, hub.y, 78, segmentSpans(spec.options.length, wts)[target][0] - 90);
-      if (flick > 0 && t < 0.84) {
+      if (flick > 0 && u < 0.84) {
         px = hub.x + (aim[0] - hub.x) * flick;
         py = hub.y + (aim[1] - hub.y) * flick;
       }
-      var held = t >= 0.18 && t < 0.82;
-      setFlowKey(spec.key, held);
-      if (bloom > 0.02 && t < 0.9) {
+      setFlowKey(spec.key, u >= 0.18 && u < 0.82);
+      if (bloom > 0.02 && u < 0.9) {
         paintFlowWheel(hub.x, hub.y, spec.options, wts, flick > 0.4 ? target : -1, 0.7 + 0.3 * outBack(Math.min(1, bloom)));
       }
-      if (t < 0.9) {
+      if (u < 0.9) {
         osCursor(fctx, px, py);
-        if (grabbed) dragGhost(fctx, px, py, spec.file);
+        if (grabbed) {
+          if (multi) stackGhost(fctx, px, py, files.length + " photos", files.length);
+          else dragGhost(fctx, px, py, files[0]);
+        }
       }
-      if (t > 0.84) {
-        var pulse = Math.min(1, (t - 0.84) / 0.16);
+      if (u > 0.84) {
+        resultChip(fctx, src.x, src.y + gap * (files.length - 1) + 50, spec.out, Math.min(1, (u - 0.84) / 0.16));
+      }
+    }
+    function drawDropBar(g, x, y, w, hot, line1, line2, badge) {
+      g.save();
+      g.fillStyle = "rgba(10,10,14,0.95)";
+      g.strokeStyle = hot ? "rgba(165,180,252,0.95)" : "rgba(255,255,255,0.18)";
+      g.lineWidth = hot ? 2 : 1;
+      if (hot) { g.shadowColor = "rgba(129,140,248,0.55)"; g.shadowBlur = 24; }
+      g.beginPath(); g.roundRect(x, y, w, 56, 24); g.fill();
+      g.shadowColor = "transparent"; g.stroke();
+      g.strokeStyle = "#fff"; g.lineWidth = 1.5;
+      g.beginPath(); g.arc(x + 30, y + 28, 11, 0, Math.PI * 2); g.stroke();
+      g.textAlign = "left"; g.textBaseline = "middle";
+      g.fillStyle = "#fff"; g.font = "600 13px Inter, Segoe UI, sans-serif";
+      g.fillText(line1, x + 52, y + 21);
+      g.fillStyle = "#a1a1aa"; g.font = "11px Inter, Segoe UI, sans-serif";
+      g.fillText(line2, x + 52, y + 38);
+      g.font = "600 11px Inter, Segoe UI, sans-serif";
+      var bw = g.measureText(badge).width + 18;
+      g.fillStyle = "#a5b4fc";
+      g.beginPath(); g.roundRect(x + w - bw - 14, y + 16, bw, 24, 8); g.fill();
+      g.fillStyle = "#09090b";
+      g.fillText(badge, x + w - bw - 5, y + 28.5);
+      g.restore();
+    }
+    function stepNode(g, x, y, w, text, state) {
+      g.save();
+      var colors = [
+        ["#18181b", "rgba(255,255,255,0.2)", "#a1a1aa"],
+        ["rgba(129,140,248,0.22)", "rgba(165,180,252,0.95)", "#e0e7ff"],
+        ["rgba(52,211,153,0.14)", "rgba(110,231,183,0.8)", "#d1fae5"]
+      ][state];
+      g.fillStyle = colors[0]; g.strokeStyle = colors[1]; g.lineWidth = state ? 1.5 : 1;
+      g.beginPath(); g.roundRect(x, y, w, 34, 17); g.fill(); g.stroke();
+      g.fillStyle = colors[2]; g.font = "600 12px Inter, Segoe UI, sans-serif";
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText((state === 2 ? "✓ " : "") + text, x + w / 2, y + 17.5);
+      g.restore();
+    }
+    function drawPresetFlow(t, spec) {
+      fctx.clearRect(0, 0, flowW, flowH);
+      fctx.fillStyle = "#0c0c0f";
+      fctx.fillRect(0, 0, flowW, flowH);
+      var folder = { x: 72, y: 216 };
+      var bar = { x: 470, y: 54, w: 340 };
+      var drop = { x: bar.x + 150, y: bar.y + 28 };
+      var start = { x: 640, y: 400 };
+      var approach = seg(t, 0, 0.12);
+      var carry = seg(t, 0.17, 0.4);
+      var grabbed = t >= 0.14 && t < 0.42;
+      var running = seg(t, 0.46, 0.88);
+      var done = t >= 0.88;
+      var tip = { x: folder.x + 20, y: folder.y + 10 };
+      var px = start.x + (tip.x - start.x) * outCubic(approach);
+      var py = start.y + (tip.y - start.y) * outCubic(approach);
+      if (carry > 0) {
+        px = tip.x + (drop.x - tip.x) * outCubic(carry);
+        py = tip.y + (drop.y - tip.y) * outCubic(carry);
+      }
+      setFlowKey(spec.key, false);
+      var processed = Math.min(spec.count, Math.floor(running * spec.count + (done ? 1 : 0)));
+      var line1 = done ? "Done · " + spec.count + " files" : running > 0 ? "Running preset…" : "Drop files";
+      var line2 = running > 0 && !done ? processed + " / " + spec.count + " photos" : "Preset ready";
+      drawDropBar(fctx, bar.x, bar.y, bar.w, (t > 0.34 && t < 0.5) || (running > 0 && !done), line1, line2, "Web Optimizer");
+      fctx.save();
+      fctx.fillStyle = "#71717a"; fctx.font = "11px Inter, Segoe UI, sans-serif"; fctx.textAlign = "left";
+      fctx.fillText("KhartTool bar · preset selected", bar.x + 8, bar.y - 12);
+      fctx.restore();
+      fileChip(fctx, folder.x, folder.y, spec.folder + "  ·  " + spec.count + " × JPG", { folder: true, sel: grabbed || (approach >= 1 && carry === 0) });
+      // pipeline steps
+      var nodeW = 132, nodeGap = 28, nodesX = 400, nodesY = 186;
+      var perFile = (running * spec.count) % 1;
+      var active = done ? -1 : Math.floor(perFile * spec.steps.length);
+      for (var s = 0; s < spec.steps.length; s++) {
+        var nx = nodesX + s * (nodeW + nodeGap);
+        var state = done ? 2 : running > 0 ? (s === active ? 1 : (s < active ? 2 : 0)) : 0;
         fctx.save();
-        fctx.globalAlpha = pulse;
-        chip(fctx, src.x, src.y + 44, spec.out);
-        fctx.globalAlpha = 1 - pulse;
-        fctx.strokeStyle = "#34d399";
-        fctx.lineWidth = 2;
-        fctx.beginPath();
-        fctx.roundRect(src.x - 6 - pulse * 8, src.y + 38 - pulse * 6, 150 + pulse * 16, 40 + pulse * 12, 12);
-        fctx.stroke();
-        fctx.globalAlpha = pulse;
-        fctx.fillStyle = "#34d399";
-        fctx.font = "11px Inter, Segoe UI, sans-serif";
-        fctx.textAlign = "left";
-        fctx.fillText("beside the source", src.x, src.y + 90);
+        fctx.globalAlpha = running > 0 || done ? 1 : 0.45;
+        stepNode(fctx, nx, nodesY, nodeW, spec.steps[s], state);
+        if (s < spec.steps.length - 1) {
+          fctx.fillStyle = "#71717a"; fctx.font = "14px Inter, Segoe UI, sans-serif"; fctx.textAlign = "center"; fctx.textBaseline = "middle";
+          fctx.fillText("→", nx + nodeW + nodeGap / 2, nodesY + 17);
+        }
         fctx.restore();
       }
+      // progress bar
+      var barX = nodesX, barY = nodesY + 56, barW = spec.steps.length * nodeW + (spec.steps.length - 1) * nodeGap;
+      fctx.save();
+      fctx.fillStyle = "#27272a";
+      fctx.beginPath(); fctx.roundRect(barX, barY, barW, 6, 3); fctx.fill();
+      fctx.fillStyle = done ? "#34d399" : "#a5b4fc";
+      fctx.beginPath(); fctx.roundRect(barX, barY, Math.max(6, barW * (done ? 1 : running)), 6, 3); fctx.fill();
+      fctx.fillStyle = "#a1a1aa"; fctx.font = "11px Inter, Segoe UI, sans-serif"; fctx.textAlign = "left";
+      fctx.fillText(done ? "All 10 photos: resized, cleaned, converted" : "Every photo goes through every step, in order", barX, barY + 24);
+      fctx.restore();
+      if (t < 0.44) {
+        osCursor(fctx, px, py);
+        if (grabbed) dragGhost(fctx, px, py, spec.folder + " (10)");
+      }
+      if (done) resultChip(fctx, folder.x, folder.y + 52, spec.folder + " · 10 × WebP", Math.min(1, (t - 0.88) / 0.12));
     }
     function playFlow(name) {
       var spec = FLOWS[name];
@@ -941,7 +1724,7 @@
       var started = performance.now();
       function tick(now) {
         if (token !== flowToken) return;
-        flowT = Math.min(1, (now - started) / 4200);
+        flowT = Math.min(1, (now - started) / (spec.ms || 4200));
         drawFlow(flowT, spec);
         if (flowT < 1) requestAnimationFrame(tick);
       }
@@ -949,6 +1732,7 @@
     }
     document.getElementById("play-shift").addEventListener("click", function () { playFlow("shift"); });
     document.getElementById("play-ctrl").addEventListener("click", function () { playFlow("ctrl"); });
+    document.getElementById("play-preset").addEventListener("click", function () { playFlow("preset"); });
     document.getElementById("flow-reset").addEventListener("click", function () {
       flowToken += 1;
       flowT = 0;
@@ -973,5 +1757,6 @@
     drawFlow(0, FLOWS.shift);
     if (reduced) { opening = false; appear = 1; }
   </script>
+  <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "4038c72f2cdd453c90a61de56bf5f213"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
