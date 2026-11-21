@@ -2,7 +2,7 @@
 
 Offline drag-and-drop file tool for Windows 10 and 11. A small pill sits above your windows. Hold Shift while you drag a file for the format wheel, or Ctrl for the tools wheel. Nothing is uploaded.
 
-**This is a test build (0.1.0).** You can try the full interface and every tool. The files it saves are blank, so the point right now is the workflow and your feedback, not the output. Real output comes with the full release.
+**This is a test build (0.1.2).** You can try the full interface and every tool. The files it saves are blank, so the point right now is the workflow and your feedback, not the output. Real output comes with the full release.
 
 ## Try it
 
